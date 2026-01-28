@@ -121,14 +121,21 @@ class VeiligheidLoader:
             # Clean crime type codes (remove spaces)
             df['crime_type'] = df['crime_type'].str.strip()
             
-            # Filter: keep only BU level (buurten) and valid crime types
-            df = df[df['gwb_code'].str.startswith('BU', na=False)].copy()
+            # Filter: keep GM (gemeente), WK (wijk), and BU (buurt) levels
+            valid_prefixes = df['gwb_code'].str.startswith(('GM', 'WK', 'BU'), na=False)
+            df = df[valid_prefixes].copy()
             df = df[df['crime_type'].isin(self.CRIME_CATEGORIES.values())].copy()
             
             # Convert count to numeric
             df['count'] = pd.to_numeric(df['count'], errors='coerce').fillna(0).astype(int)
             
-            print(f"✅ Geladen: {csv_file.name} - {len(df)} rijen, {df['gwb_code'].nunique()} buurten")
+            # Count by level
+            n_gm = df[df['gwb_code'].str.startswith('GM')]['gwb_code'].nunique()
+            n_wk = df[df['gwb_code'].str.startswith('WK')]['gwb_code'].nunique()
+            n_bu = df[df['gwb_code'].str.startswith('BU')]['gwb_code'].nunique()
+            
+            print(f"✅ Geladen: {csv_file.name} - {len(df)} rijen")
+            print(f"   Gemeenten: {n_gm}, Wijken: {n_wk}, Buurten: {n_bu}")
             
             # Cache
             self.cache[year] = df
@@ -141,13 +148,13 @@ class VeiligheidLoader:
     
     def pivot_to_wide(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Pivot from long format (one row per crime type) to wide format (one row per buurt)
+        Pivot from long format (one row per crime type) to wide format (one row per location)
         
         Args:
             df: Long format DataFrame from load_year()
             
         Returns:
-            Wide format DataFrame with crime counts as columns
+            Wide format DataFrame with crime counts as columns (all levels: GM, WK, BU)
         """
         if df is None or df.empty:
             return pd.DataFrame()

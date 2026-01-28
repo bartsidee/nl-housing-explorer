@@ -144,61 +144,79 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                         # ==========================================
                         print(f"   🔄 Aggregating veiligheid to wijken & gemeenten...")
                         
-                        # For wijken: aggregate from buurten
-                        if 'wijk_code' in df.columns:
-                            agg_dict = {
-                                'totaal': 'sum',
-                                'crime_rate': 'mean',
-                                'a_inw': 'sum'
-                            }
-                            # Add inbraak if available
-                            if 'inbraak' in df.columns:
-                                agg_dict['inbraak'] = 'sum'
-                            
-                            wijk_agg = df[df['geo_level'] == 'buurt'].groupby('wijk_code').agg(agg_dict).reset_index()
-                            
-                            # Recalculate rates for wijken
-                            wijk_agg['crime_rate_recalc'] = (wijk_agg['totaal'] / wijk_agg['a_inw'] * 1000).fillna(0)
-                            if 'inbraak' in wijk_agg.columns:
-                                wijk_agg['inbraak_rate_recalc'] = (wijk_agg['inbraak'] / wijk_agg['a_inw'] * 1000).fillna(0)
-                            
-                            # Update wijken with aggregated data
-                            for _, wijk_row in wijk_agg.iterrows():
-                                mask = (df['geo_level'] == 'wijk') & (df['gwb_code_10'] == wijk_row['wijk_code'])
-                                if mask.any():
-                                    df.loc[mask, 'totaal'] = wijk_row['totaal']
-                                    df.loc[mask, 'crime_rate'] = wijk_row['crime_rate_recalc']
-                                    if 'inbraak' in wijk_agg.columns:
-                                        df.loc[mask, 'inbraak'] = wijk_row['inbraak']
-                                        df.loc[mask, 'inbraak_rate'] = wijk_row['inbraak_rate_recalc']
+                        # First, create hierarchy columns if they don't exist
+                        def extract_wijk_code(code):
+                            """Extract wijk code from gwb_code_10"""
+                            if code.startswith('WK'):
+                                return code[:8]
+                            elif code.startswith('BU'):
+                                return 'WK' + code[2:8]
+                            return None
                         
-                        # For gemeenten: aggregate from buurten
-                        if 'gemeente_code' in df.columns:
-                            agg_dict = {
-                                'totaal': 'sum',
-                                'crime_rate': 'mean',
-                                'a_inw': 'sum'
-                            }
-                            # Add inbraak if available
-                            if 'inbraak' in df.columns:
-                                agg_dict['inbraak'] = 'sum'
-                            
-                            gemeente_agg = df[df['geo_level'] == 'buurt'].groupby('gemeente_code').agg(agg_dict).reset_index()
-                            
-                            # Recalculate for gemeenten
-                            gemeente_agg['crime_rate_recalc'] = (gemeente_agg['totaal'] / gemeente_agg['a_inw'] * 1000).fillna(0)
-                            if 'inbraak' in gemeente_agg.columns:
-                                gemeente_agg['inbraak_rate_recalc'] = (gemeente_agg['inbraak'] / gemeente_agg['a_inw'] * 1000).fillna(0)
-                            
-                            # Update gemeenten
-                            for _, gem_row in gemeente_agg.iterrows():
-                                mask = (df['geo_level'] == 'gemeente') & (df['gwb_code_10'] == gem_row['gemeente_code'])
-                                if mask.any():
-                                    df.loc[mask, 'totaal'] = gem_row['totaal']
-                                    df.loc[mask, 'crime_rate'] = gem_row['crime_rate_recalc']
-                                    if 'inbraak' in gemeente_agg.columns:
-                                        df.loc[mask, 'inbraak'] = gem_row['inbraak']
-                                        df.loc[mask, 'inbraak_rate'] = gem_row['inbraak_rate_recalc']
+                        def extract_gemeente_code(code):
+                            """Extract gemeente code from gwb_code_10"""
+                            if code.startswith('GM'):
+                                return code[:6]
+                            elif code.startswith('WK'):
+                                return 'GM' + code[2:6]
+                            elif code.startswith('BU'):
+                                return 'GM' + code[2:6]
+                            return None
+                        
+                        df['wijk_code'] = df['gwb_code_10'].apply(extract_wijk_code)
+                        df['gemeente_code'] = df['gwb_code_10'].apply(extract_gemeente_code)
+                        
+                        # Aggregate wijk-level data from buurten
+                        agg_dict = {
+                            'totaal': 'sum',
+                            'crime_rate': 'mean',
+                            'a_inw': 'sum'
+                        }
+                        if 'inbraak' in df.columns:
+                            agg_dict['inbraak'] = 'sum'
+                        
+                        wijk_agg = df[df['geo_level'] == 'buurt'].groupby('wijk_code').agg(agg_dict).reset_index()
+                        
+                        # Recalculate rates for wijken
+                        wijk_agg['crime_rate_recalc'] = (wijk_agg['totaal'] / wijk_agg['a_inw'] * 1000).fillna(0)
+                        if 'inbraak' in wijk_agg.columns:
+                            wijk_agg['inbraak_rate_recalc'] = (wijk_agg['inbraak'] / wijk_agg['a_inw'] * 1000).fillna(0)
+                        
+                        # Update wijken with aggregated data
+                        for _, wijk_row in wijk_agg.iterrows():
+                            mask = (df['geo_level'] == 'wijk') & (df['gwb_code_10'] == wijk_row['wijk_code'])
+                            if mask.any():
+                                df.loc[mask, 'totaal'] = wijk_row['totaal']
+                                df.loc[mask, 'crime_rate'] = wijk_row['crime_rate_recalc']
+                                if 'inbraak' in wijk_agg.columns:
+                                    df.loc[mask, 'inbraak'] = wijk_row['inbraak']
+                                    df.loc[mask, 'inbraak_rate'] = wijk_row['inbraak_rate_recalc']
+                        
+                        # Aggregate gemeente-level data from buurten
+                        agg_dict = {
+                            'totaal': 'sum',
+                            'crime_rate': 'mean',
+                            'a_inw': 'sum'
+                        }
+                        if 'inbraak' in df.columns:
+                            agg_dict['inbraak'] = 'sum'
+                        
+                        gemeente_agg = df[df['geo_level'] == 'buurt'].groupby('gemeente_code').agg(agg_dict).reset_index()
+                        
+                        # Recalculate rates for gemeenten
+                        gemeente_agg['crime_rate_recalc'] = (gemeente_agg['totaal'] / gemeente_agg['a_inw'] * 1000).fillna(0)
+                        if 'inbraak' in gemeente_agg.columns:
+                            gemeente_agg['inbraak_rate_recalc'] = (gemeente_agg['inbraak'] / gemeente_agg['a_inw'] * 1000).fillna(0)
+                        
+                        # Update gemeenten with aggregated data
+                        for _, gem_row in gemeente_agg.iterrows():
+                            mask = (df['geo_level'] == 'gemeente') & (df['gwb_code_10'] == gem_row['gemeente_code'])
+                            if mask.any():
+                                df.loc[mask, 'totaal'] = gem_row['totaal']
+                                df.loc[mask, 'crime_rate'] = gem_row['crime_rate_recalc']
+                                if 'inbraak' in gemeente_agg.columns:
+                                    df.loc[mask, 'inbraak'] = gem_row['inbraak']
+                                    df.loc[mask, 'inbraak_rate'] = gem_row['inbraak_rate_recalc']
                         
                         # Handle inf values (areas with 0 population)
                         df['crime_rate'] = df['crime_rate'].replace([np.inf, -np.inf], np.nan)
