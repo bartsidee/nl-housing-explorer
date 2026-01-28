@@ -141,28 +141,18 @@ def load_custom_weights_from_session():
     """
     Load custom score weights from:
     1. URL query params (for sharing)
-    2. Browser localStorage (persistent across sessions)
-    3. Session state (current session)
+    2. Session state (current session)
     """
     # Strategy 1: Check URL for shared weights (highest priority)
     try:
-        from src.local_storage import import_from_url
+        from src.url_sharing import import_from_url
         url_weights = import_from_url()
         if url_weights:
             return url_weights
     except Exception:
         pass
     
-    # Strategy 2: Check browser localStorage (persistent)
-    try:
-        from src.local_storage import load_from_local_storage
-        storage_weights = load_from_local_storage('custom_weights')
-        if storage_weights:
-            return storage_weights
-    except Exception:
-        pass
-    
-    # Strategy 3: Check session state (current session)
+    # Strategy 2: Check session state (current session)
     if '_persisted_weights' in st.session_state:
         return st.session_state['_persisted_weights']
     
@@ -213,35 +203,13 @@ def load_preset_weights(preset_weights):
 
 def save_custom_weights_to_session(weights_dict):
     """
-    Save custom score weights to:
-    1. Session state (current session)
-    2. Browser localStorage (persistent across sessions)
+    Save custom score weights to session state
     
-    URL sharing available via 'Share Configuration' button
+    Note: Weights persist only during the current session.
+    Use 'Share Configuration' button to generate a URL for persistence.
     """
-    # Save to session state
+    # Save to session state (current session only)
     st.session_state['_persisted_weights'] = weights_dict
-    
-    # Save to browser localStorage (persistent)
-    try:
-        from src.local_storage import save_to_local_storage
-        save_to_local_storage('custom_weights', weights_dict)
-    except Exception:
-        pass  # Silently fail if localStorage not available
-
-
-def clear_custom_weights_from_session():
-    """Clear custom score weights from session state and localStorage"""
-    # Clear session state
-    if '_persisted_weights' in st.session_state:
-        del st.session_state['_persisted_weights']
-    
-    # Clear browser localStorage
-    try:
-        from src.local_storage import clear_local_storage
-        clear_local_storage('custom_weights')
-    except Exception:
-        pass
 
 
 def get_ses_badge_html(ses_score):
@@ -300,12 +268,11 @@ def main():
     st.markdown('<div class="main-header">🏘️ NL Woonlocatie Verkenner</div>', unsafe_allow_html=True)
     st.markdown("**CBS Kerncijfers Wijken en Buurten:** 31 indicatoren | 6 databronnen | Trend analyse 2020-2025")
     
-    # Load saved weights from localStorage/URL
-    # Note: localStorage load is async, may need rerun to get data
+    # Load saved weights from URL/session
     saved_weights = load_custom_weights_from_session()
     
     # Only populate weight sliders if we haven't already AND we have data
-    if 'weights_loaded_from_storage' not in st.session_state:
+    if 'weights_loaded_from_url' not in st.session_state:
         if saved_weights:
             # Pre-populate session state with saved weights (skip comment fields)
             for key, value in saved_weights.items():
@@ -315,17 +282,7 @@ def main():
                         st.session_state[f'weight_{key}'] = float(value)
                     except (ValueError, TypeError):
                         pass  # Skip invalid values
-            st.session_state['weights_restored'] = True
-            st.session_state['weights_loaded_from_storage'] = True
-        else:
-            # Check if localStorage might have data (async not complete yet)
-            # If _localstorage_loaded flag is not set, localStorage might still be loading
-            if '_localstorage_loaded_custom_weights' not in st.session_state:
-                # Don't mark as loaded yet, will try again on next rerun
-                pass
-            else:
-                # localStorage has been checked and is empty
-                st.session_state['weights_loaded_from_storage'] = True
+        st.session_state['weights_loaded_from_url'] = True
     
     # Load data
     with st.spinner("Data laden..."):
@@ -523,12 +480,7 @@ def main():
         st.markdown("**Selecteer indicatoren en stel gewichten in**")
         st.caption("Hogere gewichten = belangrijker in je score (0.0 - 5.0)")
         
-        # Show restore message if weights were loaded
-        if st.session_state.get('weights_restored', False):
-            st.success("💾 Opgeslagen gewichten geladen!")
-            st.session_state['weights_restored'] = False  # Only show once
-        
-        # Check if weights came from URL (shared configuration)
+        # Show message if weights came from URL (shared configuration)
         query_params = st.query_params
         if 'weights' in query_params and not st.session_state.get('_url_weights_loaded', False):
             st.info("🔗 Gedeelde configuratie geladen vanuit URL!")
@@ -561,9 +513,15 @@ def main():
                 with col_clear:
                     if st.button("🔄 Reset", key='reset_from_preset', use_container_width=True):
                         calculator_temp = CustomScoreCalculator()
+                        
+                        # Clear all weight values in session state
                         for key in calculator_temp.AVAILABLE_INDICATORS.keys():
                             st.session_state[f'weight_{key}'] = 0.0
-                        clear_custom_weights_from_session()
+                        
+                        # Clear session state flags
+                        if '_persisted_weights' in st.session_state:
+                            del st.session_state['_persisted_weights']
+                        
                         st.rerun()
         
         st.markdown("---")
@@ -571,13 +529,19 @@ def main():
         st.caption("💡 Tip: Gebruik **negatieve gewichten** (bijv. -2.0) om richting om te draaien")
         st.caption("   Voorbeeld: WOZ +2.0 = voorkeur voor dure gebieden, WOZ -2.0 = betaalbaar")
         
-        # Reset button (original position, but smaller)
+        # Reset button
         if st.button("🔄 Reset Alles", help="Wis alle gewichten", key='reset_all_weights'):
             calculator_temp = CustomScoreCalculator()
+            
+            # Clear all weight values in session state
             for key in calculator_temp.AVAILABLE_INDICATORS.keys():
                 if f'weight_{key}' in st.session_state:
                     st.session_state[f'weight_{key}'] = 0.0
-            clear_custom_weights_from_session()
+            
+            # Clear session state flags
+            if '_persisted_weights' in st.session_state:
+                del st.session_state['_persisted_weights']
+            
             st.rerun()
         
         # Initialize calculator
@@ -683,41 +647,26 @@ def main():
             
             # Share configuration button
             st.markdown("---")
-            col_share, col_export = st.columns([1, 1])
-            with col_share:
-                if st.button("🔗 Deel Configuratie", help="Genereer een URL om je instellingen te delen", use_container_width=True):
-                    from src.local_storage import export_to_url
-                    share_url_suffix = export_to_url(indicator_weights)
-                    
-                    # Get current page URL (works in both dev and production)
-                    try:
-                        # Try to get actual URL from Streamlit config
-                        base_url = st.get_option("browser.serverAddress")
-                        if not base_url or base_url == "localhost":
-                            # Fallback to localhost for development
-                            base_url = "http://localhost:8501"
-                    except:
-                        # Fallback
+            if st.button("🔗 Deel Configuratie", help="Genereer een URL om je instellingen te delen", use_container_width=True):
+                from src.url_sharing import export_to_url
+                share_url_suffix = export_to_url(indicator_weights)
+                
+                # Get current page URL (works in both dev and production)
+                try:
+                    # Try to get actual URL from Streamlit config
+                    base_url = st.get_option("browser.serverAddress")
+                    if not base_url or base_url == "localhost":
+                        # Fallback to localhost for development
                         base_url = "http://localhost:8501"
-                    
-                    full_url = f"{base_url}{share_url_suffix}"
-                    
-                    st.code(full_url, language=None)
-                    st.caption("💾 Kopieer deze URL om je configuratie te delen!")
-                    st.caption("ℹ️ Werkt cross-device en met anderen")
-            
-            with col_export:
-                # Export as JSON
-                if st.button("💾 Export JSON", help="Download configuratie als JSON bestand", use_container_width=True):
-                    import json
-                    json_str = json.dumps(indicator_weights, indent=2)
-                    st.download_button(
-                        label="⬇️ Download",
-                        data=json_str,
-                        file_name="custom_weights.json",
-                        mime="application/json",
-                        use_container_width=True
-                    )
+                except:
+                    # Fallback
+                    base_url = "http://localhost:8501"
+                
+                full_url = f"{base_url}{share_url_suffix}"
+                
+                st.code(full_url, language=None)
+                st.caption("💾 Kopieer deze URL om je configuratie te delen!")
+                st.caption("ℹ️ Werkt cross-device en met anderen")
         else:
             st.info("💡 Stel gewichten in om je custom score te activeren")
         

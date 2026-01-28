@@ -673,7 +673,7 @@ def main():
     # Step 3: Calculate composite trend score
     print("\n5. Calculating composite trend score...")
     
-    # Use default weights (custom weights are managed in the web UI via localStorage)
+    # Use default weights (custom weights are managed in the web UI via session state)
     trends['trend_score'] = calculate_composite_trend_score(trends, custom_weights=None)
     
     # Step 4: Merge trends with current data
