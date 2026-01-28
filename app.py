@@ -83,16 +83,22 @@ st.set_page_config(
     page_title="NL Housing Explorer",
     page_icon="🏘️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"  # Mobile: collapsed, Desktop: expanded
 )
 
-# Custom CSS
+# Custom CSS with mobile responsiveness
 st.markdown("""
 <style>
+    /* Reduce top padding on main content */
+    .block-container {
+        padding-top: 2rem;
+    }
+    
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
         color: #1f77b4;
+        margin-top: 0;
         margin-bottom: 0.5rem;
     }
     .breadcrumb {
@@ -118,6 +124,39 @@ st.markdown("""
     .ses-low {
         background-color: #f8d7da;
         color: #721c24;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        /* More compact header on mobile */
+        .block-container {
+            padding-top: 1rem;
+        }
+        .main-header {
+            font-size: 1.75rem;
+        }
+        /* Hide color legend on mobile (saves space) */
+        .color-legend-mobile-hide {
+            display: none;
+        }
+        /* Dataframes scroll horizontally on mobile */
+        [data-testid="stDataFrame"] {
+            overflow-x: auto;
+        }
+        /* Stack columns on mobile for better readability */
+        [data-testid="column"] {
+            min-width: 100% !important;
+            flex: 1 1 100% !important;
+        }
+        /* Adjust metric spacing on mobile */
+        [data-testid="stMetric"] {
+            margin-bottom: 0.5rem;
+        }
+        /* Make tab buttons larger on mobile (better touch targets) */
+        [data-testid="stTabs"] button {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -717,33 +756,36 @@ def main():
             indicator_col = map_indicator[1]
             indicator_name = map_indicator[0]
             
-            # Show color scheme info
+            # Show color scheme info (hidden on mobile)
             from components.map_viewer import get_colorscheme_for_indicator, get_indicator_interpretation
             colorscheme = get_colorscheme_for_indicator(indicator_col)
             interpretation = get_indicator_interpretation(indicator_col)
             
+            st.markdown('<div class="color-legend-mobile-hide">', unsafe_allow_html=True)
             if 'RdYlGn' in colorscheme:
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation} (Rood = ver/hoog = slecht)")
             elif colorscheme == 'YlGnBu':
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation} (Geel = laag)")
             else:
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation}")
+            st.markdown('</div>', unsafe_allow_html=True)
             
-            # Show data stats (using df_filtered from sidebar!)
-            col_a, col_b, col_c = st.columns(3)
-            with col_a:
-                st.metric("🗺️ Locaties", len(map_df))
-            with col_b:
-                if len(map_df) > 0 and indicator_col in map_df.columns:
-                    coverage = map_df[indicator_col].notna().sum()
-                    st.metric("📊 Data coverage", f"{coverage/len(map_df)*100:.0f}%")
-                else:
-                    st.metric("📊 Data coverage", "0%")
-            with col_c:
-                if indicator_col in map_df.columns:
-                    valid_values = map_df[indicator_col].dropna()
-                    if not valid_values.empty:
-                        st.metric("📈 Mediaan", f"{valid_values.median():.1f}")
+            # Show data stats (collapsible on mobile)
+            with st.expander("📊 Statistieken", expanded=False):
+                col_a, col_b, col_c = st.columns(3)
+                with col_a:
+                    st.metric("🗺️ Locaties", len(map_df))
+                with col_b:
+                    if len(map_df) > 0 and indicator_col in map_df.columns:
+                        coverage = map_df[indicator_col].notna().sum()
+                        st.metric("Data coverage", f"{coverage/len(map_df)*100:.0f}%")
+                    else:
+                        st.metric("Data coverage", "0%")
+                with col_c:
+                    if indicator_col in map_df.columns:
+                        valid_values = map_df[indicator_col].dropna()
+                        if not valid_values.empty:
+                            st.metric("Mediaan", f"{valid_values.median():.1f}")
             
             # Load and create map
             st.caption(f"**Kaart:** {indicator_name} | **Niveau:** {map_geo_level.title()}")
@@ -786,8 +828,8 @@ def main():
                                 baseline_data=df  # Full dataset for consistent color scale
                             )
                             
-                            # Display map
-                            st_folium(fig_map, width='stretch', height=600, returned_objects=[])
+                            # Display map (responsive height for mobile)
+                            st_folium(fig_map, width='stretch', height=500, returned_objects=[])
                             st.caption(f"✅ Toont {len(gdf_with_data)} locaties | Kleuren: vaste schaal o.b.v. landelijk gemiddelde")
             
             except Exception as e:
@@ -969,19 +1011,17 @@ def main():
             
             st.dataframe(display_df, width='stretch', hide_index=True)
             
-            # Summary stats
-            st.markdown("### 📈 Statistieken")
-            col_a, col_b, col_c, col_d = st.columns(4)
-            
-            with col_a:
-                st.metric("Hoogste", f"{df_valid[sort_col].max():.1f}")
-            with col_b:
-                st.metric("Gemiddelde", f"{df_valid[sort_col].mean():.1f}")
-            with col_c:
-                st.metric("Mediaan", f"{df_valid[sort_col].median():.1f}")
-            with col_d:
-                coverage = df_filtered[sort_col].notna().sum()
-                st.metric("Data coverage", f"{coverage/len(df_filtered)*100:.0f}%")
+            # Summary stats (collapsible on mobile)
+            with st.expander("📈 Statistieken", expanded=False):
+                col_a, col_b = st.columns(2)
+                
+                with col_a:
+                    st.metric("Hoogste", f"{df_valid[sort_col].max():.1f}")
+                    st.metric("Mediaan", f"{df_valid[sort_col].median():.1f}")
+                with col_b:
+                    st.metric("Gemiddelde", f"{df_valid[sort_col].mean():.1f}")
+                    coverage = df_filtered[sort_col].notna().sum()
+                    st.metric("Data coverage", f"{coverage/len(df_filtered)*100:.0f}%")
             
             # Download button
             csv = display_df.to_csv(index=False)
@@ -1033,7 +1073,7 @@ def main():
                 
                 # SES Scores
                 st.subheader("🎓 SES - Sociaaleconomische Status")
-                ses_cols = st.columns(4)
+                ses_cols = st.columns(2)
                 ses_indicators = [
                     ('Overall', 'ses_overall'),
                     ('Welvaart', 'ses_welvaart'),
@@ -1041,7 +1081,7 @@ def main():
                     ('Onderwijs', 'ses_onderwijs')
                 ]
                 for i, (name, col) in enumerate(ses_indicators):
-                    with ses_cols[i]:
+                    with ses_cols[i % 2]:
                         if col in location_data and pd.notna(location_data[col]):
                             st.metric(name, f"{location_data[col]:.0f}", help="Percentiel 1-100")
                         else:
@@ -1138,17 +1178,15 @@ def main():
                 
                 # Transport & Bereikbaarheid
                 st.subheader("🚆 Transport & Bereikbaarheid")
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2 = st.columns(2)
                 with col1:
                     if 'g_afs_trein' in location_data and pd.notna(location_data['g_afs_trein']):
                         st.metric("Treinstation", f"{location_data['g_afs_trein']:.1f} km")
+                    if 'g_afs_oprit' in location_data and pd.notna(location_data['g_afs_oprit']):
+                        st.metric("Snelweg-oprit", f"{location_data['g_afs_oprit']:.1f} km")
                 with col2:
                     if 'g_afs_overstap' in location_data and pd.notna(location_data['g_afs_overstap']):
                         st.metric("Overstapstation", f"{location_data['g_afs_overstap']:.1f} km")
-                with col3:
-                    if 'g_afs_oprit' in location_data and pd.notna(location_data['g_afs_oprit']):
-                        st.metric("Snelweg-oprit", f"{location_data['g_afs_oprit']:.1f} km")
-                with col4:
                     if 'g_afs_bieb' in location_data and pd.notna(location_data['g_afs_bieb']):
                         st.metric("Bibliotheek", f"{location_data['g_afs_bieb']:.1f} km")
                 

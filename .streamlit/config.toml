@@ -1,16 +1,14 @@
-# Streamlit Global Configuration
-# Disable all analytics and telemetry
+# Streamlit Configuration for Production
 
 [browser]
-# Disable usage statistics
 gatherUsageStats = false
 
 [client]
-# Show detailed error messages (good for development)
+# Show error details (can be set to false for production)
 showErrorDetails = true
 
-# Toolbar mode
-toolbarMode = "auto"
+# Toolbar: "minimal" hides toolbar by default (visible on hover)
+toolbarMode = "minimal"
 
 [server]
 # File watcher
