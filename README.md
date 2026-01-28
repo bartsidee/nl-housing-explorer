@@ -19,10 +19,9 @@ Interactive dashboard for exploring Dutch neighborhoods, districts, and municipa
 - **Elevation data**: NAP height visualization
 
 ### 🎯 Custom Scoring
-- **Personalized weights**: Configure your own priorities
-- **6 preset profiles**: Family-friendly, Urban, Affordable, etc.
-- **Auto-save**: Preferences stored in browser localStorage
-- **Share configurations**: URL-based sharing
+- **Personalized weights**: Configure your own priorities (31 indicators)
+- **Preset profiles**: Quick-start configurations available
+- **Share configurations**: URL-based sharing for collaboration
 
 ### 📈 Trend Analysis
 - **5-year trends**: Growth/decline indicators
@@ -138,20 +137,6 @@ nl-housing-explorer/
 2. Integrate in `scripts/process_multiyear_trends.py`
 3. Add to indicator list in `app.py`
 4. Add color mapping in `components/map_viewer.py`
-
-### Custom Profiles
-Create new preset in `data/presets/`:
-```json
-{
-  "_preset": "My Profile",
-  "_description": "Description",
-  "custom_weights": {
-    "ses_overall": 3.0,
-    "crime_rate": -2.0,
-    "groen_percentage": 4.0
-  }
-}
-```
 
 ## 📝 License
 

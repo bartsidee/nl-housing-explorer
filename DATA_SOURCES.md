@@ -71,7 +71,7 @@ python scripts/download_veiligheid_data.py  # Crime data
 ## 🔄 Data Pipeline
 
 ```
-Raw Data → process_multiyear_trends.py → processed/current/main_data_with_trends.csv → app.py
+Raw Data → process_multiyear_trends.py → processed/current/main_data_with_trends.parquet → app.py
 ```
 
 ---

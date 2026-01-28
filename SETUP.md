@@ -92,7 +92,7 @@ Dashboard opens at http://localhost:8501
 python scripts/process_multiyear_trends.py
 
 # Verify
-ls -lh data/processed/current/main_data_with_trends.csv
+ls -lh data/processed/current/main_data_with_trends.parquet
 ```
 
 These files are included in git:
@@ -138,7 +138,7 @@ pip install --upgrade -r requirements.txt
 
 ```bash
 python scripts/process_multiyear_trends.py
-ls data/processed/current/main_data_with_trends.csv
+ls data/processed/current/main_data_with_trends.parquet
 ```
 
 ### Missing raw data
@@ -194,20 +194,6 @@ primaryColor = "#1f77b4"
 
 [server]
 port = 8501
-```
-
-### Custom Presets
-
-Add profiles in `data/presets/`:
-
-```json
-{
-  "_preset": "My Profile",
-  "custom_weights": {
-    "ses_overall": 3.0,
-    "groen_percentage": 4.0
-  }
-}
 ```
 
 ---

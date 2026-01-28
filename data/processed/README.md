@@ -10,16 +10,16 @@
 ```
 data/processed/
 ├── 2020/
-│   └── main_data.csv          # KWB 2020 + SES 2020 (volledig geprocessed)
+│   └── main_data.parquet      # KWB 2020 + SES 2020 (volledig geprocessed)
 ├── 2021/
-│   └── main_data.csv          # KWB 2021 + SES 2021 (volledig geprocessed)
+│   └── main_data.parquet      # KWB 2021 + SES 2021 (volledig geprocessed)
 ├── 2022/
-│   └── main_data.csv          # KWB 2022 + SES 2022 (volledig geprocessed)
+│   └── main_data.parquet      # KWB 2022 + SES 2022 (volledig geprocessed)
 ├── 2023/
-│   └── main_data.csv          # KWB 2023 + SES 2022 (volledig geprocessed)
+│   └── main_data.parquet      # KWB 2023 + SES 2022 (volledig geprocessed)
 └── current/
-    ├── main_data_with_trends.csv  # ⭐ GEBRUIKT DOOR DASHBOARD
-    └── metadata.json              # Trend metadata
+    ├── main_data_with_trends.parquet  # ⭐ GEBRUIKT DOOR DASHBOARD
+    └── metadata.json                  # Trend metadata
 ```
 
 ---
@@ -29,19 +29,19 @@ data/processed/
 ### Dashboard (app.py)
 ```python
 # Laadt:
-data/processed/current/main_data_with_trends.csv  # Met trends (ENIGE OPTIE)
+data/processed/current/main_data_with_trends.parquet  # Met trends (ENIGE OPTIE)
 ```
 
 ### Trend Processing (scripts/process_multiyear_trends.py)
 ```python
 # Input (genereert indien niet aanwezig):
-data/processed/2020/main_data.csv
-data/processed/2021/main_data.csv
-data/processed/2022/main_data.csv
-data/processed/2023/main_data.csv
+data/processed/2020/main_data.parquet
+data/processed/2021/main_data.parquet
+data/processed/2022/main_data.parquet
+data/processed/2023/main_data.parquet
 
 # Output:
-data/processed/current/main_data_with_trends.csv
+data/processed/current/main_data_with_trends.parquet
 data/processed/current/metadata.json
 ```
 
@@ -64,7 +64,7 @@ data/processed/current/metadata.json
 ### Current Data
 **Doel:** Actieve dataset voor dashboard
 
-#### `main_data_with_trends.csv` ⭐
+#### `main_data_with_trends.parquet` ⭐
 - **ENIGE DATASET VOOR DASHBOARD**
 - 2023 data + 34 trend kolommen
 - Trends: 2020 → 2023 (3 jaar)
@@ -119,10 +119,10 @@ python3 scripts/process_multiyear_trends.py
    - Load `data/raw/kwb/{YEAR}/kwb-{YEAR}.xlsx`
    - Load `data/raw/ses/85900NED/` (filter op jaar)
    - Merge, clean, calculate derived metrics
-   - Save naar `data/processed/{YEAR}/main_data.csv`
+   - Save naar `data/processed/{YEAR}/main_data.parquet`
 3. Calculate trends tussen eerste en laatste jaar
 4. Merge trends met current data
-5. Save `current/main_data_with_trends.csv`
+5. Save `current/main_data_with_trends.parquet`
 
 ### Stap 2: Dashboard
 ```bash
@@ -130,7 +130,7 @@ streamlit run app.py
 ```
 
 **Wat gebeurt er:**
-1. Check `data/processed/current/main_data_with_trends.csv`
+1. Check `data/processed/current/main_data_with_trends.parquet`
 2. Load data (automatisch cached door Streamlit)
 3. Toon trends in UI
 
@@ -141,7 +141,7 @@ streamlit run app.py
 **Bewaar altijd:**
 - `2020/`, `2021/`, `2022/`, `2023/` folders
   → Nodig voor herberekening trends
-- `current/main_data_with_trends.csv`
+- `current/main_data_with_trends.parquet`
   → Dashboard dataset (enige benodigde file!)
 - `current/metadata.json`
   → Trend informatie
@@ -168,7 +168,13 @@ Verwijderd (oude naming convention / intermediate files):
 - `ses/ses_2022.csv` - Intermediate file
 - `ses/ses_2023.csv` - Intermediate file
 
-**Reden:** Vervangen door `current/main_data_with_trends.csv` (production data)
+**2026-01-28 (Parquet migration):**
+Switched from CSV to Parquet format:
+- `*.csv` → `*.parquet` (all processed data)
+- 50% smaller file sizes with gzip compression
+- Faster loading times
+
+**Reden:** Vervangen door `current/main_data_with_trends.parquet` (production data)
 
 ---
 
@@ -219,12 +225,12 @@ python3 scripts/process_multiyear_trends.py
 ## 📊 File Sizes (indicatief)
 
 ```
-2020/main_data.csv              ~7.5 MB
-2021/main_data.csv              ~7.5 MB
-2022/main_data.csv              ~7.5 MB
-2023/main_data.csv              ~7.6 MB
-current/main_data_with_trends.csv ~14 MB  (56 base + 34 trend columns)
-current/metadata.json           <1 KB
+2020/main_data.parquet              ~3.5 MB (gzip compressed)
+2021/main_data.parquet              ~3.5 MB (gzip compressed)
+2022/main_data.parquet              ~3.5 MB (gzip compressed)
+2023/main_data.parquet              ~3.6 MB (gzip compressed)
+current/main_data_with_trends.parquet ~7 MB  (56 base + 34 trend columns, gzip compressed)
+current/metadata.json               <1 KB
 ```
 
 **Totaal:** ~44 MB
@@ -248,7 +254,7 @@ Output:
 ```python
 import pandas as pd
 
-df = pd.read_csv('data/processed/current/main_data_with_trends.csv')
+df = pd.read_parquet('data/processed/current/main_data_with_trends.parquet')
 
 # Check trend columns
 trend_cols = [c for c in df.columns if c.startswith('trend_')]
