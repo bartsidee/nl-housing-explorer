@@ -351,13 +351,15 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                     backfill_path_parquet = Path("data/processed") / str(backfill_year) / 'main_data.parquet'
                     backfill_path_csv = Path("data/processed") / str(backfill_year) / 'main_data.csv'
                     
+                    df_backfill = None
                     if backfill_path_parquet.exists():
                         print(f"   📥 Loading {backfill_year} data for backfilling...")
                         df_backfill = pd.read_parquet(backfill_path_parquet)
                     elif backfill_path_csv.exists():
                         print(f"   📥 Loading {backfill_year} data for backfilling (CSV)...")
                         df_backfill = pd.read_csv(backfill_path_csv, low_memory=False)
-                        
+                    
+                    if df_backfill is not None:
                         # Select only the missing columns + gwb_code_10
                         backfill_cols_available = ['gwb_code_10'] + [c for c in missing_cols 
                                                                       if c in df_backfill.columns]
