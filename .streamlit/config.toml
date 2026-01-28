@@ -16,9 +16,6 @@ toolbarMode = "auto"
 # File watcher
 fileWatcherType = "auto"
 
-# Auto-reload on save
-runOnSave = true
-
 [theme]
 # Base theme
 base = "light"
