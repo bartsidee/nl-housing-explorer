@@ -191,36 +191,12 @@ class DataProcessor:
         # Calculate derived metrics
         df = self.calculate_derived_metrics(df)
         
-        # Save if requested
+        # Save if requested (Parquet format)
         if save:
-            output_path = self.processed_dir / f'kwb_{year}_cleaned.csv'
-            df.to_csv(output_path, index=False)
+            output_path = self.processed_dir / f'kwb_{year}_cleaned.parquet'
+            df.to_parquet(output_path, compression='gzip', index=False)
             print(f"Saved to: {output_path}")
         
         return df
 
 
-def main():
-    """Test data processing"""
-    processor = DataProcessor()
-    
-    # Process 2023 data
-    df = processor.process_year(year=2023, save=True)
-    
-    # Print summary
-    print("\n=== Processing Summary ===")
-    print(f"Total rows: {len(df)}")
-    print(f"\nGeographic levels:")
-    if 'geo_level' in df.columns:
-        print(df['geo_level'].value_counts())
-    
-    print(f"\nSample data:")
-    print(df.head())
-    
-    print(f"\nData completeness (% non-null):")
-    completeness = (df.notna().sum() / len(df) * 100).sort_values(ascending=False)
-    print(completeness.head(20))
-
-
-if __name__ == '__main__':
-    main()

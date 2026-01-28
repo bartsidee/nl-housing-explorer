@@ -20,7 +20,8 @@ import numpy as np
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / 'src'))
 
-from process_with_ses import process_data_with_ses
+from data_processing import DataProcessor
+from ses_loader import SESDataLoader
 from veiligheid_loader import load_politie_crime_data, VeiligheidLoader
 from rivm_groen_loader import RIVMGroenLoader
 from nabijheid_loader import NabijheidLoader
@@ -83,6 +84,16 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
         try:
             print(f"\nProcessing {year} from scratch...")
             
+            # ==========================================
+            # STEP 1: Process KWB data
+            # ==========================================
+            print(f"\n1. Processing KWB data ({year})...")
+            processor = DataProcessor()
+            df = processor.process_year(year=year, save=False)
+            
+            # ==========================================
+            # STEP 2: Load and merge SES data
+            # ==========================================
             # Use matching SES year, fallback to 2022 if not available
             # SES data: 2014-2022 available, 2023 not yet published
             ses_year = min(year, 2022)  # Use same year or 2022 (latest available)
@@ -90,11 +101,12 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
             if ses_year != year:
                 print(f"   Note: Using SES data from {ses_year} (2023 not yet published)")
             
-            df = process_data_with_ses(
-                year_kwb=year,
-                year_ses=ses_year,  # Dynamic SES year!
-                save=False          # We'll save manually to year-specific folder
-            )
+            print(f"\n2. Loading SES data ({ses_year})...")
+            ses_loader = SESDataLoader()
+            ses_df = ses_loader.load_ses_data(year=ses_year)
+            
+            print(f"\n3. Merging SES data...")
+            df = ses_loader.merge_with_kwb_data(df, ses_df)
             
             # ==========================================
             # ADD VEILIGHEID DATA

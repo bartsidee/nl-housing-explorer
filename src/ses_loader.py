@@ -161,32 +161,3 @@ class SESDataLoader:
         return merged
 
 
-def main():
-    """Test SES data loading"""
-    loader = SESDataLoader()
-    
-    # Load 2022 SES data (most recent available)
-    ses_df = loader.load_ses_data(year=2022)
-    
-    print("\n=== SES Data Summary ===")
-    print(f"Total records: {len(ses_df)}")
-    print(f"\nGeo levels:")
-    print(ses_df['geo_level'].value_counts())
-    
-    print(f"\nSES Scores (percentielgroep 1-100):")
-    for col in ['ses_welvaart', 'ses_inkomen', 'ses_onderwijs', 'ses_overall']:
-        if col in ses_df.columns:
-            valid_count = ses_df[col].notna().sum()
-            print(f"  {col}: {ses_df[col].min():.1f} - {ses_df[col].max():.1f} (mean: {ses_df[col].mean():.1f}, n={valid_count})")
-    
-    print(f"\nSample data (top 10 by SES overall):")
-    print(ses_df.nlargest(10, 'ses_overall')[['gwb_code_10', 'regio_naam', 'ses_welvaart', 'ses_inkomen', 'ses_onderwijs', 'ses_overall']])
-    
-    # Save
-    output_path = Path('data/processed/ses_2022.csv')
-    ses_df.to_csv(output_path, index=False)
-    print(f"\nSaved to: {output_path}")
-
-
-if __name__ == '__main__':
-    main()

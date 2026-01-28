@@ -365,39 +365,6 @@ def get_ses_badge_html(ses_score):
     return f'<span class="ses-badge {class_name}">SES: {ses_score:.0f} ({label})</span>'
 
 
-def create_ses_radar_chart(row):
-    """Create radar chart including SES scores"""
-    categories = ['Welvaart', 'Gezin', 'Ruimte', 'Voorzieningen']
-    values = [
-        row.get('welvaart_score', 0),
-        row.get('family_score', 0),
-        row.get('space_score', 0),
-        row.get('amenities_score', 0)
-    ]
-    
-    # Add SES if available
-    if 'ses_overall' in row and pd.notna(row['ses_overall']):
-        categories.append('SES')
-        values.append(row['ses_overall'])
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatterpolar(
-        r=values,
-        theta=categories,
-        fill='toself',
-        name='Scores'
-    ))
-    
-    fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=False,
-        height=400
-    )
-    
-    return fig
-
-
 def main():
     # Header
     st.markdown('<div class="main-header">🏘️ NL Woonlocatie Verkenner</div>', unsafe_allow_html=True)
@@ -885,7 +852,7 @@ def main():
                         # Merge with filtered data
                         # Use 'inner' to show ONLY areas that match filters (filtered areas disappear)
                         gdf_with_data = gdf.merge(
-                            map_df[['gwb_code_10', 'display_name', indicator_col]],
+                            map_df[['gwb_code_10', 'regio', indicator_col]],
                             left_on='statcode',
                             right_on='gwb_code_10',
                             how='inner'
@@ -1030,7 +997,7 @@ def main():
                 
                 data_row = {
                     'Rang': len(display_data) + 1,
-                    'Locatie': row['display_name'],
+                    'Locatie': row['regio'],
                     'Niveau': row['geo_level'].title(),
                 }
                 
@@ -1113,7 +1080,7 @@ def main():
     with tab3:
         st.header("🔍 Locatie Details - CBS Kerncijfers")
         
-        location_options = sorted(df_filtered['display_name'].dropna().unique())
+        location_options = sorted(df_filtered['regio'].dropna().unique())
         
         if len(location_options) == 0:
             st.warning("Geen locaties beschikbaar met de huidige filters. Pas de selectie aan.")
@@ -1124,7 +1091,7 @@ def main():
             )
             
             # Check if location exists in filtered data
-            location_matches = df_filtered[df_filtered['display_name'] == selected_location]
+            location_matches = df_filtered[df_filtered['regio'] == selected_location]
             if len(location_matches) == 0:
                 st.error(f"Locatie '{selected_location}' niet gevonden in gefilterde data.")
             else:
@@ -1416,7 +1383,7 @@ def main():
         
         if compare_mode == 'Binnen huidig niveau':
             # Original: only within current geo_level
-            location_options = sorted(df_filtered['display_name'].dropna().unique())
+            location_options = sorted(df_filtered['regio'].dropna().unique())
         else:
             # NEW: Allow comparison across all levels with level labels
             # Create labeled options: "Amsterdam (Gemeente)", "Centrum (Wijk, Amsterdam)", etc.
@@ -1431,11 +1398,11 @@ def main():
             
             def create_label(row):
                 """Create label with gemeente for wijk/buurt to avoid duplicates"""
-                if pd.isna(row['display_name']):
+                if pd.isna(row['regio']):
                     return None
                 
                 level = level_labels.get(row['geo_level'], row['geo_level'])
-                name = row['display_name']
+                name = row['regio']
                 
                 # For wijk and buurt: add gemeente name to disambiguate
                 if row['geo_level'] in ['wijk', 'buurt']:
@@ -1473,7 +1440,7 @@ def main():
             else:
                 # Get comparison data
                 if compare_mode == 'Binnen huidig niveau':
-                    comparison_df = df_filtered[df_filtered['display_name'].isin(selected_locations)]
+                    comparison_df = df_filtered[df_filtered['regio'].isin(selected_locations)]
                 else:
                     # Use gwb_code_10 for unique identification
                     # Map selected labeled names to their unique codes
@@ -1492,11 +1459,11 @@ def main():
                     
                     def create_label_for_comparison(row):
                         """Create consistent label for comparison table"""
-                        if pd.isna(row['display_name']):
+                        if pd.isna(row['regio']):
                             return None
                         
                         level = level_labels.get(row['geo_level'], row['geo_level'])
-                        name = row['display_name']
+                        name = row['regio']
                         
                         # For wijk and buurt: add gemeente name
                         if row['geo_level'] in ['wijk', 'buurt']:
@@ -1569,7 +1536,7 @@ def main():
                 if compare_mode == 'Alle niveaus (cross-level)' and 'display_with_level' in comparison_df.columns:
                     location_col = 'display_with_level'
                 else:
-                    location_col = 'display_name'
+                    location_col = 'regio'
                 
                 for indicator_name, col, unit in indicators:
                     if col in comparison_df.columns:
