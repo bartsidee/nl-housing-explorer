@@ -35,38 +35,46 @@ except ImportError as e:
 
 
 MAP_INDICATOR_BASE_OPTIONS = [
-    ('🚨 Misdrijven - Totaal (per 1000 inw.)', 'crime_rate'),
-    ('🏠 Inbraak (per 1000 inw.)', 'inbraak_rate'),
-    ('SES - Overall (percentiel)', 'ses_overall'),
-    ('SES - Welvaart (percentiel)', 'ses_welvaart'),
-    ('SES - Inkomen (percentiel)', 'ses_inkomen'),
-    ('SES - Onderwijs (percentiel)', 'ses_onderwijs'),
-    ('Gemiddeld inkomen (€)', 'g_ink_pi'),
-    ('WOZ waarde gemiddeld (€)', 'g_wozbag'),
-    ('Participatiegraad (%)', 'p_arb_pp'),
-    ('Huishoudens laag inkomen (%)', 'p_ink_li'),
-    ('Huishoudens hoog inkomen (%)', 'p_ink_hi'),
-    ('Koopwoningen (%)', 'p_koopw'),
-    ('Kinderen 0-14 jaar (%)', 'pct_children'),
-    ('Gezinnen met kinderen (%)', 'pct_families'),
-    ('Gemiddelde huishoudgrootte (personen)', 'g_hhgro'),
-    ('Afstand basisschool (km)', 'g_afs_sc'),
-    ('Afstand kinderopvang (km)', 'g_afs_kv'),
-    ('Oppervlakte per persoon (m²)', 'area_per_person_m2'),
-    ('Wateroppervlak (%)', 'pct_water'),
-    ('Bevolkingsdichtheid (per km²)', 'bev_dich'),
-    ('Totale oppervlakte (ha)', 'a_opp_ha'),
-    ('Afstand huisarts (km)', 'g_afs_hp'),
-    ('Afstand supermarkt (km)', 'g_afs_gs'),
-    ('Afstand treinstation (km) 🚆', 'g_afs_trein'),
-    ('Afstand overstapstation (km) 🚉', 'g_afs_overstap'),
-    ('Afstand snelweg-oprit (km) 🚗', 'g_afs_oprit'),
-    ('Afstand bibliotheek (km) 📚', 'g_afs_bieb'),
-    ('Groenpercentage (%) 🌳', 'groen_percentage'),
-    ('NAP Hoogte gemiddeld (m) 🏔️', 'nap_hoogte_gem'),
-    ('Nederlandse herkomst (%)', 'p_herk_nl'),
-    ('Europese herkomst excl. NL (%)', 'p_herk_eur'),
-    ('Buiten-Europese herkomst (%)', 'p_herk_neu'),
+    # Most popular indicators first (consistent with Tab 2)
+    ('🏠 WOZ waarde gemiddeld', 'g_wozbag'),
+    ('💰 Gemiddeld inkomen', 'g_ink_pi'),
+    ('👥 Bevolkingsdichtheid', 'bev_dich'),
+    ('📊 SES Overall', 'ses_overall'),
+    ('👶 Kinderen 0-14 jaar', 'pct_children'),
+    ('🌳 Groenpercentage', 'groen_percentage'),
+    ('🚨 Misdrijven - Totaal', 'crime_rate'),
+    # SES scores
+    ('📊 SES - Welvaart', 'ses_welvaart'),
+    ('📊 SES - Inkomen', 'ses_inkomen'),
+    ('📊 SES - Onderwijs', 'ses_onderwijs'),
+    # Welvaart
+    ('Participatiegraad', 'p_arb_pp'),
+    ('Huishoudens laag inkomen', 'p_ink_li'),
+    ('Huishoudens hoog inkomen', 'p_ink_hi'),
+    ('Koopwoningen', 'p_koopw'),
+    # Gezin
+    ('Gezinnen met kinderen', 'pct_families'),
+    ('Gemiddelde huishoudgrootte', 'g_hhgro'),
+    # Voorzieningen
+    ('Afstand basisschool', 'g_afs_sc'),
+    ('Afstand kinderopvang', 'g_afs_kv'),
+    ('Afstand huisarts', 'g_afs_hp'),
+    ('Afstand supermarkt', 'g_afs_gs'),
+    ('Afstand treinstation 🚆', 'g_afs_trein'),
+    ('Afstand overstapstation 🚉', 'g_afs_overstap'),
+    ('Afstand snelweg-oprit 🚗', 'g_afs_oprit'),
+    ('Afstand bibliotheek 📚', 'g_afs_bieb'),
+    # Veiligheid
+    ('🏠 Inbraak', 'inbraak_rate'),
+    # Herkomst
+    ('Nederlandse herkomst', 'p_herk_nl'),
+    ('Europese herkomst excl. NL', 'p_herk_eur'),
+    ('Buiten-Europese herkomst', 'p_herk_neu'),
+    # Omgeving
+    ('Oppervlakte per persoon', 'area_per_person_m2'),
+    ('Wateroppervlak', 'pct_water'),
+    ('Totale oppervlakte', 'a_opp_ha'),
+    ('NAP Hoogte gemiddeld 🏔️', 'nap_hoogte_gem'),
 ]
 MAP_INDICATOR_LABEL_TO_COLUMN = {label: column for label, column in MAP_INDICATOR_BASE_OPTIONS}
 
@@ -732,12 +740,23 @@ def main():
         if not MAP_AVAILABLE:
             st.error("Kaart component niet beschikbaar. Installeer: pip install folium streamlit-folium geopandas")
         else:
-            # Indicator selector - ALLE ruwe CBS indicatoren
-            map_options = list(MAP_INDICATOR_BASE_OPTIONS)
+            # Build indicator selector with priority ordering (consistent with Tab 2)
+            map_options = []
             
-            # Add custom score if configured
+            # 1. Custom Score (highest priority when active)
             if 'custom_indicator_weights' in st.session_state and st.session_state['custom_indicator_weights']:
-                map_options.insert(0, ('🎯 Mijn Custom Score', 'custom_score'))
+                map_options.append(('🎯 Mijn Custom Score', 'custom_score'))
+            
+            # 2. Trend indicators (if available)
+            if 'trend_score' in df.columns:
+                map_options.append(('📈 Trend Score (dynamiek)', 'trend_score'))
+            if 'trend_bev_dich_pct' in df.columns:
+                map_options.append(('📈 Bevolkingsgroei', 'trend_bev_dich_pct'))
+            if 'trend_pct_children_pct' in df.columns:
+                map_options.append(('📈 Kinderen trend', 'trend_pct_children_pct'))
+            
+            # 3. All other indicators (from base options)
+            map_options.extend(MAP_INDICATOR_BASE_OPTIONS)
             
             map_indicator = st.selectbox(
                 "📊 Kies indicator om op kaart te visualiseren:",
@@ -837,62 +856,73 @@ def main():
         with col1:
             top_n = st.number_input("Toon top", min_value=5, max_value=100, value=20, step=5)
         with col2:
-            # Indicator options with units  
-            sort_options = [
-                ('🚨 Misdrijven - Totaal (per 1000 inw.)', 'crime_rate'),
-                ('🏠 Inbraak (per 1000 inw.)', 'inbraak_rate'),
-                ('SES - Overall (percentiel)', 'ses_overall'),
-                ('SES - Welvaart (percentiel)', 'ses_welvaart'),
-                ('SES - Inkomen (percentiel)', 'ses_inkomen'),
-                ('SES - Onderwijs (percentiel)', 'ses_onderwijs'),
-                ('Gemiddeld inkomen (€)', 'g_ink_pi'),
-                ('WOZ waarde (€)', 'g_wozbag'),
-                ('Participatiegraad (%)', 'p_arb_pp'),
-                ('Laag inkomen (%)', 'p_ink_li'),
-                ('Hoog inkomen (%)', 'p_ink_hi'),
-                ('Koopwoningen (%)', 'p_koopw'),
-                ('Kinderen 0-14 jaar (%)', 'pct_children'),
-                ('Gezinnen met kinderen (%)', 'pct_families'),
-                ('Huishoudgrootte (personen)', 'g_hhgro'),
-                ('Afstand basisschool (km)', 'g_afs_sc'),
-                ('Afstand kinderopvang (km)', 'g_afs_kv'),
-                ('Afstand huisarts (km)', 'g_afs_hp'),
-                ('Afstand supermarkt (km)', 'g_afs_gs'),
-                ('Afstand treinstation (km)', 'g_afs_trein'),
-                ('Afstand overstapstation (km)', 'g_afs_overstap'),
-                ('Afstand snelweg-oprit (km)', 'g_afs_oprit'),
-                ('Afstand bibliotheek (km)', 'g_afs_bieb'),
-                ('Oppervlakte per persoon (m²)', 'area_per_person_m2'),
-                ('Wateroppervlak (%)', 'pct_water'),
-                ('Bevolkingsdichtheid (per km²)', 'bev_dich'),
-                ('Totale oppervlakte (ha)', 'a_opp_ha'),
-                ('Groenpercentage (%)', 'groen_percentage'),
-                ('NAP Hoogte gemiddeld (m)', 'nap_hoogte_gem'),
-                # Herkomst
-                ('Herkomst: Nederland (%)', 'p_herk_nl'),
-                ('Herkomst: Europa (excl. NL) (%)', 'p_herk_eur'),
-                ('Herkomst: Buiten-Europa (%)', 'p_herk_neu'),
-            ]
+            # Build sort options with priority ordering
+            sort_options = []
             
-            # Add trend indicators if available
-            trend_indicators_available = [col for col in df.columns if col.startswith('trend_') and col.endswith('_pct')]
-            if 'trend_score' in df.columns:
-                sort_options.insert(0, ('📈 Trend Score (dynamiek)', 'trend_score'))
-            if 'trend_pct_children_pct' in df.columns:
-                sort_options.insert(1 if 'trend_score' in df.columns else 0, 
-                                  ('📈 Kinderen trend (%)', 'trend_pct_children_pct'))
-            if 'trend_bev_dich_pct' in df.columns:
-                sort_options.insert(2 if 'trend_score' in df.columns else 1,
-                                  ('📈 Bevolkingsgroei (%)', 'trend_bev_dich_pct'))
-            
-            # Add custom score if configured
+            # 1. Custom Score (highest priority when active)
             if 'custom_indicator_weights' in st.session_state and st.session_state['custom_indicator_weights']:
-                sort_options.insert(0, ('🎯 Mijn Custom Score', 'custom_score'))
+                sort_options.append(('🎯 Mijn Custom Score', 'custom_score'))
+            
+            # 2. Trend indicators (if available)
+            if 'trend_score' in df.columns:
+                sort_options.append(('📈 Trend Score (dynamiek)', 'trend_score'))
+            if 'trend_bev_dich_pct' in df.columns:
+                sort_options.append(('📈 Bevolkingsgroei', 'trend_bev_dich_pct'))
+            if 'trend_pct_children_pct' in df.columns:
+                sort_options.append(('📈 Kinderen trend', 'trend_pct_children_pct'))
+            
+            # 3. Most popular indicators (quick access)
+            sort_options.extend([
+                ('🏠 WOZ waarde', 'g_wozbag'),
+                ('💰 Gemiddeld inkomen', 'g_ink_pi'),
+                ('👥 Bevolkingsdichtheid', 'bev_dich'),
+                ('📊 SES Overall', 'ses_overall'),
+                ('👶 Kinderen 0-14 jaar', 'pct_children'),
+                ('🌳 Groenpercentage', 'groen_percentage'),
+                ('🚨 Misdrijven - Totaal', 'crime_rate'),
+            ])
+            
+            # 4. All other indicators by category
+            sort_options.extend([
+                # SES
+                ('SES - Welvaart', 'ses_welvaart'),
+                ('SES - Inkomen', 'ses_inkomen'),
+                ('SES - Onderwijs', 'ses_onderwijs'),
+                # Welvaart
+                ('Participatiegraad', 'p_arb_pp'),
+                ('Laag inkomen', 'p_ink_li'),
+                ('Hoog inkomen', 'p_ink_hi'),
+                ('Koopwoningen', 'p_koopw'),
+                # Gezin
+                ('Gezinnen met kinderen', 'pct_families'),
+                ('Huishoudgrootte', 'g_hhgro'),
+                # Voorzieningen
+                ('Afstand basisschool', 'g_afs_sc'),
+                ('Afstand kinderopvang', 'g_afs_kv'),
+                ('Afstand huisarts', 'g_afs_hp'),
+                ('Afstand supermarkt', 'g_afs_gs'),
+                ('Afstand treinstation', 'g_afs_trein'),
+                ('Afstand overstapstation', 'g_afs_overstap'),
+                ('Afstand snelweg-oprit', 'g_afs_oprit'),
+                ('Afstand bibliotheek', 'g_afs_bieb'),
+                # Veiligheid
+                ('Inbraak', 'inbraak_rate'),
+                # Herkomst
+                ('Herkomst: Nederland', 'p_herk_nl'),
+                ('Herkomst: Europa (excl. NL)', 'p_herk_eur'),
+                ('Herkomst: Buiten-Europa', 'p_herk_neu'),
+                # Omgeving
+                ('Oppervlakte per persoon', 'area_per_person_m2'),
+                ('Wateroppervlak', 'pct_water'),
+                ('Totale oppervlakte', 'a_opp_ha'),
+                ('NAP Hoogte gemiddeld', 'nap_hoogte_gem'),
+            ])
             
             sort_indicator = st.selectbox(
                 "Sorteer op indicator", 
                 options=sort_options,
-                format_func=lambda x: x[0]
+                format_func=lambda x: x[0],
+                help="💡 Populaire indicatoren staan bovenaan"
             )
         
         sort_col = sort_indicator[1]
