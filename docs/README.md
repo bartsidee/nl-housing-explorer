@@ -1,6 +1,6 @@
 # Documentation Overview
 
-Complete documentation for the NL Housing Explorer project.
+Complete documentation for the NL Location Insights project.
 
 ## 📚 Main Documentation
 
@@ -44,7 +44,7 @@ Complete documentation for the NL Housing Explorer project.
 ## 📖 Documentation Structure
 
 ```
-nl-housing-explorer/
+nl-location-insights/
 ├── README.md                    # Start here
 ├── SETUP.md                     # Installation guide
 ├── DATA_DOWNLOAD_GUIDE.md       # Data download (detailed)
@@ -73,7 +73,7 @@ nl-housing-explorer/
 ## 🆘 Still Need Help?
 
 1. Check documentation above
-2. Search [GitHub Issues](https://github.com/bartsidee/nl-housing-explorer/issues)
+2. Search [GitHub Issues](https://github.com/bartsidee/nl-location-insights/issues)
 3. Open new issue with details
 
 ---

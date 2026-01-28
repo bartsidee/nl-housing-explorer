@@ -1,12 +1,11 @@
 """
-🏘️ NL Housing Explorer
+🌍 NL Leefomgeving Verkenner | NL Location Insights
 
-Features:
-- 22+ ruwe CBS indicatoren (geen gewogen scores)
-- SES percentielgroepen (CBS 85900NED)
-- Simpele gemeente filter met auto-zoom
-- 🗺️ Interactive choropleth map (PDOK WFS)
-- Complete data: 3,352 wijken, 14,421 buurten
+Comprehensive location data explorer for the Netherlands covering:
+- Housing, safety, environment, amenities & demographics
+- 36+ indicators from 6 official data sources (CBS, Politie, RIVM, PDOK)
+- 18,000+ locations: gemeenten, wijken, buurten
+- 5-year trends (2020-2025) & custom scoring
 """
 import streamlit as st
 import pandas as pd
@@ -80,8 +79,8 @@ MAP_INDICATOR_LABEL_TO_COLUMN = {label: column for label, column in MAP_INDICATO
 
 # Page config
 st.set_page_config(
-    page_title="NL Housing Explorer",
-    page_icon="🏘️",
+    page_title="NL Leefomgeving Verkenner",
+    page_icon="🌍",
     layout="wide",
     initial_sidebar_state="auto"  # Mobile: collapsed, Desktop: expanded
 )
@@ -367,8 +366,8 @@ def get_ses_badge_html(ses_score):
 
 def main():
     # Header
-    st.markdown('<div class="main-header">🏘️ NL Woonlocatie Verkenner</div>', unsafe_allow_html=True)
-    st.markdown("**CBS Kerncijfers Wijken en Buurten:** 31 indicatoren | 6 databronnen | Trend analyse 2020-2025")
+    st.markdown('<div class="main-header">🌍 NL Leefomgeving Verkenner</div>', unsafe_allow_html=True)
+    st.markdown("**NL Location Insights:** 36+ indicatoren | 6 databronnen | Wonen · Veiligheid · Omgeving · Voorzieningen")
     
     # Load saved weights from URL/session
     saved_weights = load_custom_weights_from_session()
@@ -706,7 +705,7 @@ def main():
         
         # Detect environment
         if os.getenv("STREAMLIT_RUNTIME_ENV") == "cloud" or os.getenv("HOSTNAME", "").startswith("streamlit"):
-            base_url = "https://nl-housing-explorer.streamlit.app"
+            base_url = "https://nl-location-insights.streamlit.app"
         else:
             base_url = f"http://localhost:{st.get_option('server.port') or 8501}"
         

@@ -1,6 +1,6 @@
 # 🛠️ Setup Instructions
 
-Guide to set up NL Housing Explorer locally or for deployment.
+Guide to set up NL Location Insights locally or for deployment.
 
 ## 📋 Prerequisites
 
@@ -14,8 +14,8 @@ Guide to set up NL Housing Explorer locally or for deployment.
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/bartsidee/nl-housing-explorer.git
-cd nl-housing-explorer
+git clone https://github.com/bartsidee/nl-location-insights.git
+cd nl-location-insights
 ```
 
 ### 2. Create Virtual Environment
@@ -110,7 +110,7 @@ git push origin main
 
 1. Go to https://share.streamlit.io
 2. Click "New app"
-3. Select repository: `bartsidee/nl-housing-explorer`
+3. Select repository: `bartsidee/nl-location-insights`
 4. Main file: `app.py`
 5. Click "Deploy"
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Guidelines for contributing to NL Housing Explorer.
+Guidelines for contributing to NL Location Insights.
 
 ## 🤝 How to Contribute
 
@@ -28,8 +28,8 @@ Guidelines for contributing to NL Housing Explorer.
 ## 📋 Development Setup
 
 ```bash
-git clone https://github.com/YOUR-FORK-USERNAME/nl-housing-explorer.git
-cd nl-housing-explorer
+git clone https://github.com/YOUR-FORK-USERNAME/nl-location-insights.git
+cd nl-location-insights
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt

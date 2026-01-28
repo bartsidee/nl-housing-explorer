@@ -1,13 +1,14 @@
-# 🏘️ NL Housing Explorer
+# 🌍 NL Leefomgeving Verkenner | NL Location Insights
 
-Interactive dashboard for exploring Dutch neighborhoods, districts, and municipalities based on 31+ indicators from official open data sources.
+Interactive dashboard for exploring Dutch neighborhoods, districts, and municipalities based on 36+ indicators from official open data sources.
 
-**Live Demo:** [https://nl-housing-explorer.streamlit.app](https://nl-housing-explorer.streamlit.app)
+**Live Demo:** [https://nl-location-insights.streamlit.app](https://nl-location-insights.streamlit.app)
 
 ## ✨ Features
 
 ### 📊 Data Analysis
-- **31 indicators** across 6 data sources (CBS, Politie, RIVM, PDOK)
+- **36+ indicators** across 6 data sources (CBS, Politie, RIVM, PDOK)
+- **Housing, safety, environment, amenities & demographics**
 - **18,000+ locations**: All Dutch neighborhoods (buurten), districts (wijken), and municipalities (gemeenten)
 - **Multi-year trends**: Compare data from 2020-2025
 - **Real-time calculations**: Custom weighted scores
@@ -19,7 +20,7 @@ Interactive dashboard for exploring Dutch neighborhoods, districts, and municipa
 - **Elevation data**: NAP height visualization
 
 ### 🎯 Custom Scoring
-- **Personalized weights**: Configure your own priorities (31 indicators)
+- **Personalized weights**: Configure your own priorities (36 indicators)
 - **Preset profiles**: Quick-start configurations available
 - **Share configurations**: URL-based sharing for collaboration
 
@@ -32,8 +33,8 @@ Interactive dashboard for exploring Dutch neighborhoods, districts, and municipa
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/bartsidee/nl-housing-explorer.git
-cd nl-housing-explorer
+git clone https://github.com/bartsidee/nl-location-insights.git
+cd nl-location-insights
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -110,7 +111,7 @@ See [DATA_SOURCES.md](DATA_SOURCES.md) for complete attribution and licenses.
 ## 📁 Project Structure
 
 ```
-nl-housing-explorer/
+nl-location-insights/
 ├── app.py                      # Main dashboard application
 ├── components/
 │   └── map_viewer.py          # Map visualization component
