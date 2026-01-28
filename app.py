@@ -147,16 +147,27 @@ def load_data_with_ses():
 
 def load_custom_weights_from_session():
     """
-    Load custom score weights from:
+    Load custom score weights and filters from:
     1. URL query params (for sharing)
     2. Session state (current session)
+    
+    Returns dict with weights
     """
-    # Strategy 1: Check URL for shared weights (highest priority)
+    # Strategy 1: Check URL for shared config (highest priority)
     try:
         from src.url_sharing import import_from_url
-        url_weights = import_from_url()
-        if url_weights:
-            return url_weights
+        url_config = import_from_url()
+        if url_config:
+            # Set filter session state from URL if provided
+            if 'provincie' in url_config:
+                st.session_state['provincie_select'] = url_config['provincie']
+            if 'gemeente' in url_config:
+                st.session_state['gemeente_select'] = url_config['gemeente']
+            if 'kaart_niveau' in url_config:
+                st.session_state['map_view_level'] = url_config['kaart_niveau']
+            
+            # Return weights
+            return url_config.get('weights', {})
     except Exception:
         pass
     
@@ -485,71 +496,41 @@ def main():
     
     # 🎯 CUSTOM SCORE CONFIGURATOR
     with st.sidebar.expander("🎯 Maak je eigen score", expanded=False):
-        st.markdown("**Selecteer indicatoren en stel gewichten in**")
-        st.caption("Hogere gewichten = belangrijker in je score (0.0 - 5.0)")
-        
-        # Show message if weights came from URL (shared configuration)
+        # Show message if config came from URL
         query_params = st.query_params
-        if 'weights' in query_params and not st.session_state.get('_url_weights_loaded', False):
-            st.info("🔗 Gedeelde configuratie geladen vanuit URL!")
-            st.session_state['_url_weights_loaded'] = True
+        if 'config' in query_params and not st.session_state.get('_url_config_loaded', False):
+            st.success("🔗 Configuratie geladen vanuit link")
+            st.session_state['_url_config_loaded'] = True
         
         # Preset selector
         presets = get_available_presets()
         if presets:
-            st.markdown("---")
-            st.markdown("**📋 Laad een Profiel**")
-            
             preset_options = ['- Kies een profiel -'] + list(presets.keys())
             selected_preset = st.selectbox(
-                "Profiel",
+                "Kies een profiel",
                 options=preset_options,
-                key='preset_selector',
-                label_visibility='collapsed'
+                key='preset_selector'
             )
             
             if selected_preset != '- Kies een profiel -':
                 preset_info = presets[selected_preset]
                 st.caption(f"💡 {preset_info['description']}")
                 
-                col_load, col_clear = st.columns([1, 1])
-                with col_load:
-                    if st.button("✅ Laad Profiel", key='load_preset', use_container_width=True):
-                        load_preset_weights(preset_info['weights'])
-                        st.success(f"Profiel '{selected_preset}' geladen!")
-                        st.rerun()
-                with col_clear:
-                    if st.button("🔄 Reset", key='reset_from_preset', use_container_width=True):
-                        calculator_temp = CustomScoreCalculator()
-                        
-                        # Clear all weight values in session state
-                        for key in calculator_temp.AVAILABLE_INDICATORS.keys():
-                            st.session_state[f'weight_{key}'] = 0.0
-                        
-                        # Clear session state flags
-                        if '_persisted_weights' in st.session_state:
-                            del st.session_state['_persisted_weights']
-                        
-                        st.rerun()
+                if st.button("✅ Laad Profiel", key='load_preset', use_container_width=True):
+                    load_preset_weights(preset_info['weights'])
+                    st.success(f"'{selected_preset}' geladen!")
+                    st.rerun()
         
         st.markdown("---")
-        st.markdown("**⚙️ Pas Gewichten Aan**")
-        st.caption("💡 Tip: Gebruik **negatieve gewichten** (bijv. -2.0) om richting om te draaien")
-        st.caption("   Voorbeeld: WOZ +2.0 = voorkeur voor dure gebieden, WOZ -2.0 = betaalbaar")
+        st.caption("Stel gewichten in (-5.0 tot +5.0, negatief keert richting om)")
         
         # Reset button
-        if st.button("🔄 Reset Alles", help="Wis alle gewichten", key='reset_all_weights'):
+        if st.button("🔄 Reset", key='reset_all_weights', use_container_width=True):
             calculator_temp = CustomScoreCalculator()
-            
-            # Clear all weight values in session state
             for key in calculator_temp.AVAILABLE_INDICATORS.keys():
-                if f'weight_{key}' in st.session_state:
-                    st.session_state[f'weight_{key}'] = 0.0
-            
-            # Clear session state flags
+                st.session_state[f'weight_{key}'] = 0.0
             if '_persisted_weights' in st.session_state:
                 del st.session_state['_persisted_weights']
-            
             st.rerun()
         
         # Initialize calculator
@@ -578,32 +559,12 @@ def main():
         # Store selected indicators and weights
         indicator_weights = {}
         
-        # First pass: collect all current weights from session state
-        category_weights = {}
-        for category, indicators in categories.items():
-            category_sum = 0
-            for ind_key, ind_name, ind_unit, is_inverse in indicators:
-                weight_key = f"weight_{ind_key}"
-                if weight_key in st.session_state:
-                    weight_val = st.session_state[weight_key]
-                    if weight_val != 0:
-                        category_sum += abs(weight_val)  # Use absolute value for percentage
-            category_weights[category] = category_sum
-        
-        # Calculate total weight for percentages
-        total_weight_all = sum(category_weights.values())
-        
-        # Second pass: render UI with percentages
+        # Render indicators by category
         for category, indicators in categories.items():
             if not indicators:
                 continue
             
-            # Calculate percentage for this category
-            if total_weight_all > 0:
-                category_pct = (category_weights[category] / total_weight_all) * 100
-                st.markdown(f"**{category}** ({category_pct:.0f}%)")
-            else:
-                st.markdown(f"**{category}**")
+            st.markdown(f"**{category}**")
             
             for ind_key, ind_name, ind_unit, is_inverse in indicators:
                 col1, col2 = st.columns([3, 1])
@@ -639,47 +600,35 @@ def main():
         # Show summary
         if indicator_weights:
             st.markdown("---")
-            st.markdown(f"**📊 {len(indicator_weights)} indicatoren geselecteerd**")
-            total_weight = sum(indicator_weights.values())
-            st.caption(f"Totaal gewicht: {total_weight:.1f}")
-            
-            # Show top 3 weighted indicators
-            sorted_weights = sorted(indicator_weights.items(), key=lambda x: x[1], reverse=True)[:3]
-            st.caption("Top 3:")
-            for ind_key, weight in sorted_weights:
-                ind_name, _, _ = calculator.get_indicator_info(ind_key)
-                st.caption(f"  • {ind_name}: {weight:.1f}")
-            
-            # Save to session state for persistence
+            st.caption(f"✅ {len(indicator_weights)} indicatoren actief")
             save_custom_weights_to_session(indicator_weights)
-            
-            # Share configuration button
-            st.markdown("---")
-            if st.button("🔗 Deel Configuratie", help="Genereer een URL om je instellingen te delen", use_container_width=True):
-                from src.url_sharing import export_to_url
-                share_url_suffix = export_to_url(indicator_weights)
-                
-                # Get current page URL (works in both dev and production)
-                try:
-                    # Try to get actual URL from Streamlit config
-                    base_url = st.get_option("browser.serverAddress")
-                    if not base_url or base_url == "localhost":
-                        # Fallback to localhost for development
-                        base_url = "http://localhost:8501"
-                except:
-                    # Fallback
-                    base_url = "http://localhost:8501"
-                
-                full_url = f"{base_url}{share_url_suffix}"
-                
-                st.code(full_url, language=None)
-                st.caption("💾 Kopieer deze URL om je configuratie te delen!")
-                st.caption("ℹ️ Werkt cross-device en met anderen")
-        else:
-            st.info("💡 Stel gewichten in om je custom score te activeren")
         
         # Store in session state for use in tabs
         st.session_state['custom_indicator_weights'] = indicator_weights
+    
+    # Share Configuration Link
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔗 Deel instellingen", use_container_width=True):
+        from src.url_sharing import export_to_url
+        import os
+        
+        # Get current state
+        current_weights = st.session_state.get('custom_indicator_weights', {})
+        current_provincie = st.session_state.get('provincie_select', 'Alle Provincies')
+        current_gemeente = st.session_state.get('gemeente_select', 'Heel Nederland')
+        current_kaart = st.session_state.get('map_view_level', 'gemeente')
+        
+        # Generate share URL
+        share_url_suffix = export_to_url(current_weights, current_provincie, current_gemeente, current_kaart)
+        
+        # Detect environment
+        if os.getenv("STREAMLIT_RUNTIME_ENV") == "cloud" or os.getenv("HOSTNAME", "").startswith("streamlit"):
+            base_url = "https://nl-housing-explorer.streamlit.app"
+        else:
+            base_url = f"http://localhost:{st.get_option('server.port') or 8501}"
+        
+        st.sidebar.code(f"{base_url}{share_url_suffix}", language=None)
+        st.sidebar.caption("💾 Kopieer bovenstaande link")
     
     # Calculate/update custom score if weights are set
     # IMPORTANT: Calculate on full df for consistent normalization across all tabs
