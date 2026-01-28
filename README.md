@@ -46,6 +46,9 @@ python scripts/download_veiligheid_data.py  # Automated crime data
 # 4. Process data
 python scripts/process_multiyear_trends.py
 
+# Optional: Force regenerate all files
+# python scripts/process_multiyear_trends.py --force
+
 # 5. Run dashboard
 streamlit run app.py
 ```

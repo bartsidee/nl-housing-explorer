@@ -117,10 +117,10 @@ st.markdown("""
 
 @st.cache_data
 def load_data_with_ses():
-    """Load processed data with trends"""
-    trend_path = Path('data/processed/current/main_data_with_trends.csv')
+    """Load processed data with trends (Parquet format)"""
+    parquet_path = Path('data/processed/current/main_data_with_trends.parquet')
     
-    if not trend_path.exists():
+    if not parquet_path.exists():
         st.error("""
         ❌ Data file not found!
         
@@ -129,11 +129,11 @@ def load_data_with_ses():
         python3 scripts/process_multiyear_trends.py
         ```
         
-        This will generate: data/processed/current/main_data_with_trends.csv
+        This will generate: data/processed/current/main_data_with_trends.parquet
         """)
         st.stop()
     
-    df = pd.read_csv(trend_path, low_memory=False)
+    df = pd.read_parquet(parquet_path)
     return df
 
 
@@ -654,6 +654,7 @@ def main():
                         f"w_{ind_key}",
                         min_value=-5.0,  # Negative weights = reverse direction
                         max_value=5.0,
+                        value=st.session_state[weight_key],  # Explicit value prevents -5.0 default
                         step=0.1,
                         format="%.1f",
                         label_visibility="collapsed",

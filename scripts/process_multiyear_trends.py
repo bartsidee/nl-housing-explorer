@@ -59,12 +59,17 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
         print(f"PROCESSING YEAR: {year}")
         print(f"{'=' * 70}")
         
-        # Check if already processed
-        output_path = Path(f"data/processed/{year}/main_data.csv")
+        # Check if already processed (prefer Parquet, fallback to CSV)
+        output_path_parquet = Path(f"data/processed/{year}/main_data.parquet")
+        output_path_csv = Path(f"data/processed/{year}/main_data.csv")
         
-        if output_path.exists() and not force_reprocess:
-            print(f"✓ Already processed, loading from: {output_path}")
-            df = pd.read_csv(output_path, low_memory=False)
+        if (output_path_parquet.exists() or output_path_csv.exists()) and not force_reprocess:
+            if output_path_parquet.exists():
+                print(f"✓ Already processed, loading from: {output_path_parquet}")
+                df = pd.read_parquet(output_path_parquet)
+            else:
+                print(f"✓ Already processed, loading from: {output_path_csv}")
+                df = pd.read_csv(output_path_csv, low_memory=False)
             processed_data[year] = df
             print(f"  Loaded {len(df)} rows, {len(df.columns)} columns")
             
@@ -343,11 +348,15 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                     
                     # Try to load 2023 data for backfilling
                     backfill_year = 2023
-                    backfill_path = Path("data/processed") / str(backfill_year) / 'main_data.csv'
+                    backfill_path_parquet = Path("data/processed") / str(backfill_year) / 'main_data.parquet'
+                    backfill_path_csv = Path("data/processed") / str(backfill_year) / 'main_data.csv'
                     
-                    if backfill_path.exists():
+                    if backfill_path_parquet.exists():
                         print(f"   📥 Loading {backfill_year} data for backfilling...")
-                        df_backfill = pd.read_csv(backfill_path, low_memory=False)
+                        df_backfill = pd.read_parquet(backfill_path_parquet)
+                    elif backfill_path_csv.exists():
+                        print(f"   📥 Loading {backfill_year} data for backfilling (CSV)...")
+                        df_backfill = pd.read_csv(backfill_path_csv, low_memory=False)
                         
                         # Select only the missing columns + gwb_code_10
                         backfill_cols_available = ['gwb_code_10'] + [c for c in missing_cols 
@@ -374,7 +383,7 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                         else:
                             print(f"   ⚠️  No backfill data available in {backfill_year}")
                     else:
-                        print(f"   ⚠️  {backfill_year} data not found at {backfill_path}")
+                        print(f"   ⚠️  {backfill_year} data not found")
                 
                 # Strategy 2: Fill partial gaps (e.g., new buurten without distance data)
                 if partial_cols:
@@ -383,11 +392,15 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                         print(f"      - {col}: {missing_count} missing values")
                     
                     backfill_year = 2024  # Try most recent year first
-                    backfill_path = Path("data/processed") / str(backfill_year) / 'main_data.csv'
+                    backfill_path_parquet = Path("data/processed") / str(backfill_year) / 'main_data.parquet'
+                    backfill_path_csv = Path("data/processed") / str(backfill_year) / 'main_data.csv'
                     
-                    if backfill_path.exists():
+                    if backfill_path_parquet.exists() or backfill_path_csv.exists():
                         print(f"   📥 Loading {backfill_year} data for gap-filling...")
-                        df_backfill = pd.read_csv(backfill_path, low_memory=False)
+                        if backfill_path_parquet.exists():
+                            df_backfill = pd.read_parquet(backfill_path_parquet)
+                        else:
+                            df_backfill = pd.read_csv(backfill_path_csv, low_memory=False)
                         
                         filled_any = False
                         for col, missing_count in partial_cols:
@@ -416,10 +429,16 @@ def process_multiple_years(years: list[int], force_reprocess: bool = False, incl
                 if not missing_cols and not partial_cols:
                     print(f"   ✅ No missing data detected - all indicators have good coverage")
             
-            # Save to year-specific folder
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            df.to_csv(output_path, index=False)
-            print(f"\n✅ Saved {year} data: {output_path}")
+            # Save to year-specific folder (Parquet only)
+            output_path_parquet = Path(f"data/processed/{year}/main_data.parquet")
+            output_path_parquet.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Save Parquet
+            df.to_parquet(output_path_parquet, compression='gzip', index=False)
+            
+            parquet_size_mb = output_path_parquet.stat().st_size / (1024 * 1024)
+            
+            print(f"\n✅ Saved {year} data: {output_path_parquet} ({parquet_size_mb:.1f} MB)")
             print(f"   Rows: {len(df):,}, Columns: {len(df.columns)}")
             
             processed_data[year] = df
@@ -606,8 +625,21 @@ def main():
     4. Save
     """
     
-    # Years to process - NOW INCLUDING 2020-2025 for multi-year trends!
-    years_to_process = [2020, 2021, 2022, 2023, 2024, 2025]
+    # Parse command-line arguments
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description='Process multi-year KWB data with trends',
+        epilog='Use --force to regenerate all year files. Use --years to process specific years only.'
+    )
+    parser.add_argument('--force', '-f', action='store_true', help='Force reprocess all years')
+    parser.add_argument('--years', '-y', nargs='+', type=int, default=[2020, 2021, 2022, 2023, 2024, 2025], help='Years to process')
+    parser.add_argument('--no-veiligheid', action='store_true', help='Skip crime data')
+    args = parser.parse_args()
+    
+    years_to_process = sorted(args.years)
+    force_reprocess = args.force
+    include_veiligheid = not args.no_veiligheid
     
     print("\n📋 STRATEGY:")
     print(f"   1. Process years: {years_to_process}")
@@ -617,7 +649,7 @@ def main():
     print(f"   5. Threshold: 2% per year (so {2 * (len(years_to_process)-1)}% for full period)\n")
     
     # Step 1: Process all years
-    processed_data = process_multiple_years(years_to_process, force_reprocess=False)
+    processed_data = process_multiple_years(years_to_process, force_reprocess=force_reprocess, include_veiligheid=include_veiligheid)
     
     if len(processed_data) < 2:
         print("\n❌ Need at least 2 years of data to calculate trends!")
@@ -651,31 +683,17 @@ def main():
     trend_cols = [col for col in trends.columns if col.startswith('trend_')]
     print(f"   Added {len(trend_cols)} trend columns")
     
-    # Step 5: Show examples
-    print("\n📈 TOP 10 GROWING AREAS:")
-    top = df_with_trends.nlargest(10, 'trend_score')[
-        ['display_name', 'geo_level', 'trend_score', 'trend_pct_children_pct']
-    ]
-    for idx, row in top.iterrows():
-        print(f"   {row['display_name']:35s} ({row['geo_level']:8s}): "
-              f"trend={row['trend_score']:+6.1f}, children={row['trend_pct_children_pct']:+6.1f}%")
-    
-    print("\n📉 TOP 10 DECLINING AREAS:")
-    bottom = df_with_trends.nsmallest(10, 'trend_score')[
-        ['display_name', 'geo_level', 'trend_score', 'trend_pct_children_pct']
-    ]
-    for idx, row in bottom.iterrows():
-        print(f"   {row['display_name']:35s} ({row['geo_level']:8s}): "
-              f"trend={row['trend_score']:+6.1f}, children={row['trend_pct_children_pct']:+6.1f}%")
-    
-    # Step 6: Save
+    # Step 5: Save
     print("\n💾 Saving results...")
     
-    # Main output: current with trends
-    output_path = Path("data/processed/current/main_data_with_trends.csv")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    df_with_trends.to_csv(output_path, index=False)
-    print(f"   ✅ {output_path}")
+    # Main output: current with trends (Parquet only)
+    output_path_parquet = Path("data/processed/current/main_data_with_trends.parquet")
+    output_path_parquet.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Save Parquet
+    df_with_trends.to_parquet(output_path_parquet, compression='gzip', index=False)
+    parquet_size_mb = output_path_parquet.stat().st_size / (1024 * 1024)
+    print(f"   ✅ {output_path_parquet} ({parquet_size_mb:.1f} MB)")
     
     # Metadata
     import json
@@ -693,7 +711,7 @@ def main():
         "threshold_pct_per_year": 2.0
     }
     
-    metadata_path = output_path.parent / "metadata.json"
+    metadata_path = output_path_parquet.parent / "metadata.json"
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
     print(f"   ✅ {metadata_path}")
@@ -708,7 +726,7 @@ def main():
     print(f"   Indicators tracked: {len([c for c in trend_cols if c.endswith('_pct')])}")
     print(f"   Trend scores: {df_with_trends['trend_score'].notna().sum():,}")
     print(f"   Threshold: 2% per year × {years[-1] - years[0]} = {2 * (years[-1] - years[0])}% total")
-    print(f"\n💾 Output: {output_path}")
+    print(f"\n💾 Output: {output_path_parquet} ({parquet_size_mb:.1f} MB)")
     print(f"\n🚀 Dashboard is ready to use REAL {years[-1] - years[0]}-year trend data!")
     print(f"   Run: streamlit run app.py\n")
     

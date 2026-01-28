@@ -10,7 +10,7 @@ gatherUsageStats = false
 showErrorDetails = true
 
 # Toolbar mode
-toolbarMode = "minimal"
+toolbarMode = "auto"
 
 [server]
 # File watcher

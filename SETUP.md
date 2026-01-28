@@ -60,10 +60,16 @@ for y in range(2020, 2026):
 ### 5. Process Data
 
 ```bash
+# Normal processing (skip existing years)
 python scripts/process_multiyear_trends.py
+
+# Or force regenerate all files
+python scripts/process_multiyear_trends.py --force
 ```
 
-This generates `data/processed/current/main_data_with_trends.csv` (~5-10 min)
+This generates `data/processed/current/main_data_with_trends.parquet` (~5-10 min)
+
+**See [PROCESSING_GUIDE.md](PROCESSING_GUIDE.md) for advanced usage**
 
 ### 6. Run Dashboard
 

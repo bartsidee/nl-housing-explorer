@@ -21,19 +21,19 @@ def get_kwb_path(year: int) -> Path:
 
 # Processed data paths
 CURRENT_DATA_DIR = PROCESSED_DIR / 'current'
-MAIN_DATA_PATH = CURRENT_DATA_DIR / 'main_data.csv'
+MAIN_DATA_PATH = CURRENT_DATA_DIR / 'main_data.parquet'  # Legacy: now uses Parquet
 ARCHIVE_DIR = PROCESSED_DIR / 'archive'
 SES_PROCESSED_DIR = PROCESSED_DIR / 'ses'
 
 def get_processed_path(year: int) -> Path:
-    """Get path to processed KWB data for specific year"""
-    return PROCESSED_DIR / str(year) / 'main_data.csv'
+    """Get path to processed KWB data for specific year (Parquet format)"""
+    return PROCESSED_DIR / str(year) / 'main_data.parquet'
 
 # Geo cache paths
 GEO_CACHE_DIR = GEO_DIR / 'cache'
 
 # Current data path (used in production)
-MAIN_DATA_WITH_TRENDS_PATH = CURRENT_DATA_DIR / 'main_data_with_trends.csv'
+MAIN_DATA_WITH_TRENDS_PATH = CURRENT_DATA_DIR / 'main_data_with_trends.parquet'
 METADATA_PATH = CURRENT_DATA_DIR / 'metadata.json'
 
 # SES data files

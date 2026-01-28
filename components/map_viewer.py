@@ -7,6 +7,7 @@ import geopandas as gpd
 import pandas as pd
 from pathlib import Path
 import sys
+import streamlit as st
 
 sys.path.append(str(Path(__file__).parent.parent / 'src'))
 from pdok_geo_loader import PDOKGeoLoader
@@ -346,6 +347,32 @@ def create_choropleth_map(gdf_with_scores, score_column='overall_score',
     return m
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_geo_boundaries(geo_level: str, use_cache: bool = True):
+    """
+    Load geographic boundaries (cached for performance)
+    
+    Args:
+        geo_level: 'gemeente', 'wijk', or 'buurt'
+        use_cache: Use cached geo data if available
+        
+    Returns:
+        GeoDataFrame with geometries
+    """
+    loader = PDOKGeoLoader()
+    
+    if geo_level == 'gemeente':
+        gdf = loader.get_gemeenten(use_cache=use_cache)
+    elif geo_level == 'wijk':
+        gdf = loader.get_wijken(use_cache=use_cache)
+    elif geo_level == 'buurt':
+        gdf = loader.get_buurten(use_cache=use_cache)
+    else:
+        raise ValueError(f"Unknown geo_level: {geo_level}")
+    
+    return gdf
+
+
 def load_and_merge_geo_data(df_scores, geo_level='gemeente', use_cache=True):
     """
     Load geographic boundaries and merge with scores
@@ -358,16 +385,8 @@ def load_and_merge_geo_data(df_scores, geo_level='gemeente', use_cache=True):
     Returns:
         GeoDataFrame with geometries and scores
     """
-    loader = PDOKGeoLoader()
-    
-    if geo_level == 'gemeente':
-        gdf = loader.get_gemeenten(use_cache=use_cache)
-    elif geo_level == 'wijk':
-        gdf = loader.get_wijken(use_cache=use_cache)
-    elif geo_level == 'buurt':
-        gdf = loader.get_buurten(use_cache=use_cache)
-    else:
-        raise ValueError(f"Unknown geo_level: {geo_level}")
+    # Load geo boundaries (cached)
+    gdf = _load_geo_boundaries(geo_level, use_cache)
     
     # Merge with scores
     # PDOK uses 'statcode' which matches our 'gwb_code_10'
@@ -386,7 +405,7 @@ def test_map():
     import pandas as pd
     
     # Load current processed data
-    df = pd.read_csv('data/processed/current/main_data_with_trends.csv')
+    df = pd.read_parquet('data/processed/current/main_data_with_trends.parquet')
     
     # Filter gemeenten only
     df_gem = df[df['geo_level'] == 'gemeente']
