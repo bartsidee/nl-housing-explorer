@@ -36,45 +36,45 @@ except ImportError as e:
 
 MAP_INDICATOR_BASE_OPTIONS = [
     # Most popular indicators first (consistent with Tab 2)
-    ('🏠 WOZ waarde gemiddeld', 'g_wozbag'),
-    ('💰 Gemiddeld inkomen', 'g_ink_pi'),
-    ('👥 Bevolkingsdichtheid', 'bev_dich'),
-    ('📊 SES Overall', 'ses_overall'),
-    ('👶 Kinderen 0-14 jaar', 'pct_children'),
-    ('🌳 Groenpercentage', 'groen_percentage'),
-    ('🚨 Misdrijven - Totaal', 'crime_rate'),
+    ('🏠 WOZ waarde gemiddeld (€)', 'g_wozbag'),
+    ('💰 Gemiddeld inkomen (€)', 'g_ink_pi'),
+    ('👥 Bevolkingsdichtheid (per km²)', 'bev_dich'),
+    ('📊 SES Overall (percentiel)', 'ses_overall'),
+    ('👶 Kinderen 0-14 jaar (%)', 'pct_children'),
+    ('🌳 Groenpercentage (%)', 'groen_percentage'),
+    ('🚨 Misdrijven - Totaal (per 1000 inw.)', 'crime_rate'),
     # SES scores
-    ('📊 SES - Welvaart', 'ses_welvaart'),
-    ('📊 SES - Inkomen', 'ses_inkomen'),
-    ('📊 SES - Onderwijs', 'ses_onderwijs'),
+    ('📊 SES - Welvaart (percentiel)', 'ses_welvaart'),
+    ('📊 SES - Inkomen (percentiel)', 'ses_inkomen'),
+    ('📊 SES - Onderwijs (percentiel)', 'ses_onderwijs'),
     # Welvaart
-    ('Participatiegraad', 'p_arb_pp'),
-    ('Huishoudens laag inkomen', 'p_ink_li'),
-    ('Huishoudens hoog inkomen', 'p_ink_hi'),
-    ('Koopwoningen', 'p_koopw'),
+    ('Participatiegraad (%)', 'p_arb_pp'),
+    ('Huishoudens laag inkomen (%)', 'p_ink_li'),
+    ('Huishoudens hoog inkomen (%)', 'p_ink_hi'),
+    ('Koopwoningen (%)', 'p_koopw'),
     # Gezin
-    ('Gezinnen met kinderen', 'pct_families'),
-    ('Gemiddelde huishoudgrootte', 'g_hhgro'),
+    ('Gezinnen met kinderen (%)', 'pct_families'),
+    ('Gemiddelde huishoudgrootte (personen)', 'g_hhgro'),
     # Voorzieningen
-    ('Afstand basisschool', 'g_afs_sc'),
-    ('Afstand kinderopvang', 'g_afs_kv'),
-    ('Afstand huisarts', 'g_afs_hp'),
-    ('Afstand supermarkt', 'g_afs_gs'),
-    ('Afstand treinstation 🚆', 'g_afs_trein'),
-    ('Afstand overstapstation 🚉', 'g_afs_overstap'),
-    ('Afstand snelweg-oprit 🚗', 'g_afs_oprit'),
-    ('Afstand bibliotheek 📚', 'g_afs_bieb'),
+    ('Afstand basisschool (km)', 'g_afs_sc'),
+    ('Afstand kinderopvang (km)', 'g_afs_kv'),
+    ('Afstand huisarts (km)', 'g_afs_hp'),
+    ('Afstand supermarkt (km)', 'g_afs_gs'),
+    ('Afstand treinstation 🚆 (km)', 'g_afs_trein'),
+    ('Afstand overstapstation 🚉 (km)', 'g_afs_overstap'),
+    ('Afstand snelweg-oprit 🚗 (km)', 'g_afs_oprit'),
+    ('Afstand bibliotheek 📚 (km)', 'g_afs_bieb'),
     # Veiligheid
-    ('🏠 Inbraak', 'inbraak_rate'),
+    ('🏠 Inbraak (per 1000 inw.)', 'inbraak_rate'),
     # Herkomst
-    ('Nederlandse herkomst', 'p_herk_nl'),
-    ('Europese herkomst excl. NL', 'p_herk_eur'),
-    ('Buiten-Europese herkomst', 'p_herk_neu'),
+    ('Nederlandse herkomst (%)', 'p_herk_nl'),
+    ('Europese herkomst excl. NL (%)', 'p_herk_eur'),
+    ('Buiten-Europese herkomst (%)', 'p_herk_neu'),
     # Omgeving
-    ('Oppervlakte per persoon', 'area_per_person_m2'),
-    ('Wateroppervlak', 'pct_water'),
-    ('Totale oppervlakte', 'a_opp_ha'),
-    ('NAP Hoogte gemiddeld 🏔️', 'nap_hoogte_gem'),
+    ('Oppervlakte per persoon (m²)', 'area_per_person_m2'),
+    ('Wateroppervlak (%)', 'pct_water'),
+    ('Totale oppervlakte (ha)', 'a_opp_ha'),
+    ('NAP Hoogte gemiddeld 🏔️ (m)', 'nap_hoogte_gem'),
 ]
 MAP_INDICATOR_LABEL_TO_COLUMN = {label: column for label, column in MAP_INDICATOR_BASE_OPTIONS}
 
@@ -653,8 +653,8 @@ def main():
                 col1, col2 = st.columns([3, 1])
                 
                 with col1:
-                    # Indicator label with inverse indicator
-                    label = f"{ind_name}"
+                    # Indicator label with unit and inverse indicator
+                    label = f"{ind_name} ({ind_unit})"
                     if is_inverse:
                         label += " ↓"  # Arrow down = lower is better
                     st.caption(label)
@@ -1127,7 +1127,7 @@ def main():
                 for i, (name, col) in enumerate(ses_indicators):
                     with ses_cols[i % 2]:
                         if col in location_data and pd.notna(location_data[col]):
-                            st.metric(name, f"{location_data[col]:.0f}", help="Percentiel 1-100")
+                            st.metric(name, f"{location_data[col]:.0f}p", help="Percentiel 1-100")
                         else:
                             st.metric(name, "N/A")
                 
