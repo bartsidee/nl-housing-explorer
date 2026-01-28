@@ -1,0 +1,10 @@
+{
+  "_preset": "Stedelijk & Centraal",
+  "_description": "Stedelijke dynamiek - focus: OV, voorzieningen, economische vitaliteit",
+  "custom_weights": {
+    "g_afs_trein": 5.0,
+    "g_afs_gs": 3.0,
+    "ses_overall": 3.0,
+    "g_wozbag": 2.0
+  }
+}

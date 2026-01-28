@@ -1,0 +1,13 @@
+{
+  "_preset": "Randstedelijk Gezin",
+  "_description": "Gezinsleven in de rand - focus: kinderen, ruimte, groen, voorzieningen, bereikbaar",
+  "custom_weights": {
+    "ses_overall": 2.0,
+    "pct_children": 5.0,
+    "groen_percentage": 4.0,
+    "area_per_person_m2": 3.0,
+    "g_afs_sc": 3.0,
+    "g_afs_trein": 3.0,
+    "inbraak_rate": 2.0
+  }
+}

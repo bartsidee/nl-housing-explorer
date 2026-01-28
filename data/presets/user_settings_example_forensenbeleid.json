@@ -1,0 +1,10 @@
+{
+  "_preset": "Forensenbeleid (OV + Groen)",
+  "_description": "Forensenwonen - focus: OV bereikbaar, groen, betaalbaar, rustig",
+  "custom_weights": {
+    "g_afs_trein": 5.0,
+    "groen_percentage": 4.0,
+    "g_wozbag": -3.0,
+    "bev_dich": -2.0
+  }
+}

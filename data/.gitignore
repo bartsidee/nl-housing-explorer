@@ -1,0 +1,5 @@
+# User settings - personal preferences, not committed to git
+user_settings.json
+
+# Exports folder (if created by users)
+exports/

@@ -1,0 +1,10 @@
+{
+  "_preset": "Betaalbaar Wonen",
+  "_description": "Betaalbaarheid - focus: lage WOZ, bereikbaar werk, veilig",
+  "custom_weights": {
+    "g_wozbag": -5.0,
+    "g_afs_trein": 4.0,
+    "crime_rate": 3.0,
+    "g_afs_gs": 2.0
+  }
+}

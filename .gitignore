@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Exclude raw data by default
+data/raw/
+
+# Only keep data/processed/current/ for deployment
+data/processed/*/
+!data/processed/current/
+
+# Temporary files
+*.tmp
+*.checkpoint.csv
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

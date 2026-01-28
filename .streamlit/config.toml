@@ -1,0 +1,24 @@
+# Streamlit Global Configuration
+# Disable all analytics and telemetry
+
+[browser]
+# Disable usage statistics
+gatherUsageStats = false
+
+[client]
+# Show detailed error messages (good for development)
+showErrorDetails = true
+
+# Toolbar mode
+toolbarMode = "minimal"
+
+[server]
+# File watcher
+fileWatcherType = "auto"
+
+# Auto-reload on save
+runOnSave = true
+
+[theme]
+# Base theme
+base = "light"

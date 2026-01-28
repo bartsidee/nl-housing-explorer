@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-01-27T15:29:20.577788",
+  "base_year": 2025,
+  "trend_years": "2020-2025",
+  "trend_period_years": 5,
+  "rows": 18495,
+  "columns": 112,
+  "trend_columns": 40,
+  "note": "Real trends calculated from actual multi-year CBS KWB data (2020-2025)",
+  "threshold_pct_per_year": 2.0
+}

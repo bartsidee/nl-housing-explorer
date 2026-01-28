@@ -1,0 +1,11 @@
+{
+  "_preset": "Gezin met Kinderen",
+  "_description": "Gezinsvriendelijk - focus: kinderen, scholen, veiligheid, ruimte",
+  "custom_weights": {
+    "pct_children": 5.0,
+    "g_afs_sc": 4.0,
+    "inbraak_rate": 3.0,
+    "area_per_person_m2": 3.0,
+    "groen_percentage": 2.0
+  }
+}

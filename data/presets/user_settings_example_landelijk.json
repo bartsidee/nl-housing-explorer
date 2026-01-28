@@ -1,0 +1,10 @@
+{
+  "_preset": "Landelijk & Rustig",
+  "_description": "Landelijk leven - focus: ruimte, groen, rust, betaalbaar",
+  "custom_weights": {
+    "area_per_person_m2": 5.0,
+    "groen_percentage": 4.0,
+    "bev_dich": -3.0,
+    "g_wozbag": -2.0
+  }
+}
