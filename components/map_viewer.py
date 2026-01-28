@@ -103,13 +103,14 @@ def get_indicator_interpretation(indicator: str) -> str:
     return 'Blauw = hoger'
 
 
-def calculate_zoom_level(lat_diff: float, lon_diff: float) -> int:
+def calculate_zoom_level(lat_diff: float, lon_diff: float, mobile_adjustment: int = -1) -> int:
     """
     Calculate appropriate zoom level based on geographic bounds
     
     Args:
         lat_diff: Latitude span (degrees)
         lon_diff: Longitude span (degrees)
+        mobile_adjustment: Zoom adjustment for responsive design (default: -1 = zoom out more)
         
     Returns:
         Zoom level (1-18)
@@ -117,32 +118,40 @@ def calculate_zoom_level(lat_diff: float, lon_diff: float) -> int:
     # Max dimension determines zoom
     max_diff = max(lat_diff, lon_diff)
     
-    # Rough zoom level calculation
+    # Rough zoom level calculation (base zoom, will be adjusted)
     # Netherlands spans ~3° lat and ~5° lon
     if max_diff > 5:
-        return 7  # Country level
+        zoom = 7  # Country level
     elif max_diff > 2:
-        return 8  # Large province
+        zoom = 8  # Large province
     elif max_diff > 1:
-        return 9  # Province
+        zoom = 9  # Province
     elif max_diff > 0.5:
-        return 10  # Large gemeente
+        zoom = 10  # Large gemeente
     elif max_diff > 0.2:
-        return 11  # Medium gemeente
+        zoom = 11  # Medium gemeente
     elif max_diff > 0.1:
-        return 12  # Small gemeente
+        zoom = 12  # Small gemeente
     elif max_diff > 0.05:
-        return 13  # Wijk level
+        zoom = 13  # Wijk level
     else:
-        return 14  # Buurt level
+        zoom = 14  # Buurt level
+    
+    # Apply responsive adjustment (zoom out more for better mobile/desktop compatibility)
+    # Default -1 provides more context and works better on smaller screens
+    zoom = max(1, zoom + mobile_adjustment)
+    
+    return zoom
 
 
-def calculate_bounds_center_zoom(gdf: gpd.GeoDataFrame):
+def calculate_bounds_center_zoom(gdf: gpd.GeoDataFrame, zoom_adjustment: int = -1):
     """
     Calculate center and zoom level from GeoDataFrame bounds
     
     Args:
         gdf: GeoDataFrame with geometries
+        zoom_adjustment: Zoom level adjustment (negative = zoom out, positive = zoom in)
+                        Default -1 provides more context for responsive design
         
     Returns:
         Tuple (center_lat, center_lon, zoom_level)
@@ -161,7 +170,9 @@ def calculate_bounds_center_zoom(gdf: gpd.GeoDataFrame):
     # Calculate zoom based on span
     lon_diff = bounds[2] - bounds[0]
     lat_diff = bounds[3] - bounds[1]
-    zoom = calculate_zoom_level(lat_diff, lon_diff)
+    
+    # Calculate zoom with responsive adjustment (default -1 = zoom out for better mobile view)
+    zoom = calculate_zoom_level(lat_diff, lon_diff, zoom_adjustment)
     
     return (center_lat, center_lon, zoom)
 
@@ -169,7 +180,7 @@ def calculate_bounds_center_zoom(gdf: gpd.GeoDataFrame):
 def create_choropleth_map(gdf_with_scores, score_column='overall_score', 
                           auto_zoom: bool = True,
                           center_lat: float = None, center_lon: float = None, zoom_start: int = None,
-                          use_fixed_scale: bool = True, baseline_data=None):
+                          use_fixed_scale: bool = True, baseline_data=None, zoom_adjustment: int = -1):
     """
     Create choropleth map with score colors
     
@@ -181,6 +192,7 @@ def create_choropleth_map(gdf_with_scores, score_column='overall_score',
         zoom_start: Manual zoom level (ignored if auto_zoom=True)
         use_fixed_scale: Use fixed national baseline for color scale (default: True)
         baseline_data: Optional full dataset for baseline calculation (if None, uses gdf_with_scores)
+        zoom_adjustment: Zoom level adjustment (negative = zoom out, default -1 for responsive design)
         
     Returns:
         Folium Map object
@@ -194,8 +206,8 @@ def create_choropleth_map(gdf_with_scores, score_column='overall_score',
     
     # Calculate optimal center and zoom if auto_zoom enabled
     if auto_zoom:
-        center_lat, center_lon, zoom_start = calculate_bounds_center_zoom(gdf_with_scores)
-        print(f"Auto-zoom: center=({center_lat:.3f}, {center_lon:.3f}), zoom={zoom_start}")
+        center_lat, center_lon, zoom_start = calculate_bounds_center_zoom(gdf_with_scores, zoom_adjustment)
+        print(f"Auto-zoom: center=({center_lat:.3f}, {center_lon:.3f}), zoom={zoom_start} (adjustment={zoom_adjustment})")
     else:
         # Use defaults if not provided
         center_lat = center_lat or 52.2

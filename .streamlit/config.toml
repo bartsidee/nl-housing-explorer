@@ -14,6 +14,13 @@ toolbarMode = "minimal"
 # File watcher
 fileWatcherType = "auto"
 
+# Hide top-right menu buttons
+headless = true
+
+[ui]
+# Hide hamburger menu (dev menu)
+hideTopBar = true
+
 [theme]
 # Base theme
 base = "light"

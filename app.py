@@ -126,15 +126,53 @@ st.markdown("""
         color: #721c24;
     }
     
-    /* Mobile responsive */
+    /* Tablet responsive (769px - 1024px) */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .main-header {
+            font-size: 2rem;
+        }
+        h1 {
+            font-size: 2rem !important;
+        }
+        h2 {
+            font-size: 1.6rem !important;
+        }
+        h3 {
+            font-size: 1.3rem !important;
+        }
+    }
+    
+    /* Mobile responsive (≤768px) */
     @media (max-width: 768px) {
-        /* More compact header on mobile */
+        /* More top padding to avoid overlap with sidebar toggle */
         .block-container {
-            padding-top: 1rem;
+            padding-top: 4rem !important;
         }
         .main-header {
-            font-size: 1.75rem;
+            font-size: 1.4rem;
+            margin-top: 0.5rem;
         }
+        
+        /* Responsive heading sizes for mobile */
+        h1 {
+            font-size: 1.75rem !important;
+        }
+        h2 {
+            font-size: 1.4rem !important;
+        }
+        h3 {
+            font-size: 1.2rem !important;
+        }
+        h4 {
+            font-size: 1.1rem !important;
+        }
+        
+        /* Reduce spacing between headings and content */
+        h1, h2, h3, h4 {
+            margin-top: 0.75rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
         /* Hide color legend on mobile (saves space) */
         .color-legend-mobile-hide {
             display: none;
@@ -187,28 +225,37 @@ def load_data_with_ses():
 def load_custom_weights_from_session():
     """
     Load custom score weights and filters from:
-    1. URL query params (for sharing)
+    1. URL query params (for sharing) - ONLY on first load
     2. Session state (current session)
     
     Returns dict with weights
     """
-    # Strategy 1: Check URL for shared config (highest priority)
-    try:
-        from src.url_sharing import import_from_url
-        url_config = import_from_url()
-        if url_config:
-            # Set filter session state from URL if provided
-            if 'provincie' in url_config:
-                st.session_state['provincie_select'] = url_config['provincie']
-            if 'gemeente' in url_config:
-                st.session_state['gemeente_select'] = url_config['gemeente']
-            if 'kaart_niveau' in url_config:
-                st.session_state['map_view_level'] = url_config['kaart_niveau']
-            
-            # Return weights
-            return url_config.get('weights', {})
-    except Exception:
-        pass
+    # Strategy 1: Check URL for shared config (ONLY ONCE per session)
+    # After first load, session state takes precedence
+    if 'url_config_loaded' not in st.session_state:
+        try:
+            from src.url_sharing import import_from_url
+            url_config = import_from_url()
+            if url_config:
+                # Mark that we've loaded URL config (don't load again)
+                st.session_state['url_config_loaded'] = True
+                
+                # Set filter session state from URL if provided
+                if 'provincie' in url_config:
+                    st.session_state['provincie_select'] = url_config['provincie']
+                if 'gemeente' in url_config:
+                    st.session_state['gemeente_select'] = url_config['gemeente']
+                if 'kaart_niveau' in url_config:
+                    st.session_state['map_view_level'] = url_config['kaart_niveau']
+                
+                # Return weights
+                return url_config.get('weights', {})
+            else:
+                # No URL config found, mark as loaded anyway
+                st.session_state['url_config_loaded'] = True
+        except Exception:
+            # Error loading URL config, mark as loaded to avoid retry
+            st.session_state['url_config_loaded'] = True
     
     # Strategy 2: Check session state (current session)
     if '_persisted_weights' in st.session_state:
@@ -824,8 +871,9 @@ def main():
                                 gdf_with_data,
                                 score_column=indicator_col,
                                 auto_zoom=True,  # Always auto-zoom!
-                                use_fixed_scale=True,  # NEW: Use fixed national baseline
-                                baseline_data=df  # Full dataset for consistent color scale
+                                use_fixed_scale=True,  # Use fixed national baseline
+                                baseline_data=df,  # Full dataset for consistent color scale
+                                zoom_adjustment=-1  # Zoom out 1 level (better for mobile, still good on desktop)
                             )
                             
                             # Display map (responsive height for mobile)
