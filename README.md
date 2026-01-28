@@ -2,9 +2,7 @@
 
 Interactive dashboard for exploring Dutch neighborhoods, districts, and municipalities based on 31+ indicators from official open data sources.
 
-**Live Demo:** [Coming soon]
-
-![Dashboard Preview](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
+**Live Demo:** [https://nl-housing-explorer.streamlit.app](https://nl-housing-explorer.streamlit.app)
 
 ## ✨ Features
 
