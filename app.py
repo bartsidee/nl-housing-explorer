@@ -887,10 +887,12 @@ def main():
         Bekijk en sorteer op **ruwe CBS indicatoren** - geen gewogen scores, directe data uit CBS Kerncijfers.
         """)
         
-        col1, col2 = st.columns([1, 2])
+        col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
             top_n = st.number_input("Toon top", min_value=5, max_value=100, value=20, step=5)
         with col2:
+            reverse_sort = st.checkbox("Keer om", value=False, help="Toon laagste i.p.v. hoogste waarden")
+        with col3:
             # Build sort options with priority ordering
             sort_options = []
             
@@ -967,6 +969,10 @@ def main():
         inverse_indicators = ['p_ink_li', 'bev_dich', 'g_afs_hp', 'g_afs_gs', 'g_afs_sc', 'g_afs_kv']
         ascending = sort_col in inverse_indicators
         
+        # Apply manual reverse if checkbox is selected
+        if reverse_sort:
+            ascending = not ascending
+        
         # Get top locations (handle missing data)
         df_valid = df_filtered[df_filtered[sort_col].notna()]
         
@@ -1010,7 +1016,6 @@ def main():
                     data_row['Wijk'] = parent_context if parent_context else 'N/A'
                 
                 data_row['Waarde'] = row[sort_col]
-                data_row['SES'] = row.get('ses_overall', None) if 'ses_overall' in df.columns else None
                 
                 # Add trend info if available (NEW!)
                 trend_col = f'trend_{sort_col}_pct'
@@ -1048,10 +1053,6 @@ def main():
                 display_df['Waarde'] = display_df['Waarde'].apply(lambda x: f"{x:.0f}/km²")
             else:
                 display_df['Waarde'] = display_df['Waarde'].apply(lambda x: f"{x:.1f}")
-            
-            # Format SES
-            if 'SES' in display_df.columns:
-                display_df['SES'] = display_df['SES'].apply(lambda x: f"{x:.0f}" if pd.notna(x) else "N/A")
             
             st.dataframe(display_df, width='stretch', hide_index=True)
             
