@@ -89,6 +89,25 @@ st.set_page_config(
 # Custom CSS with mobile responsiveness
 st.markdown("""
 <style>
+    footer {
+        display: none !important;
+    }
+    [data-testid="stFooter"] {
+        display: none !important;
+    }
+    .viewerBadge_container__1QSob {
+        display: none !important;
+    }
+    [data-testid="appCreatorAvatar"] {
+        display: none !important;
+    }
+    [class*="_profileContainer_"] {
+        display: none !important;
+    }
+    [class*="_profilePreview_"] {
+        display: none !important;
+    }
+    
     /* Reduce top padding on main content */
     .block-container {
         padding-top: 2rem;
@@ -173,9 +192,20 @@ st.markdown("""
             margin-bottom: 0.5rem !important;
         }
         
-        /* Hide color legend on mobile (saves space) */
-        .color-legend-mobile-hide {
-            display: none;
+        /* Hide info alerts and statistics expander on mobile (saves space) */
+        /* Targets the outer stAlert div */
+        [data-testid="stAlert"] {
+            display: none !important;
+        }
+        .stAlert {
+            display: none !important;
+        }
+        /* Hide statistics expander on mobile */
+        [data-testid="stExpander"] {
+            display: none !important;
+        }
+        .stExpander {
+            display: none !important;
         }
         /* Dataframes scroll horizontally on mobile */
         [data-testid="stDataFrame"] {
@@ -808,14 +838,13 @@ def main():
             colorscheme = get_colorscheme_for_indicator(indicator_col)
             interpretation = get_indicator_interpretation(indicator_col)
             
-            st.markdown('<div class="color-legend-mobile-hide">', unsafe_allow_html=True)
+            # Show color legend - will be hidden on mobile via CSS
             if 'RdYlGn' in colorscheme:
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation} (Rood = ver/hoog = slecht)")
             elif colorscheme == 'YlGnBu':
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation} (Geel = laag)")
             else:
                 st.info(f"ℹ️ **Kleurlegenda:** {interpretation}")
-            st.markdown('</div>', unsafe_allow_html=True)
             
             # Show data stats (collapsible on mobile)
             with st.expander("📊 Statistieken", expanded=False):
